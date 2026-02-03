@@ -1,12 +1,12 @@
-export var TEOF = 'TEOF';
-export var TOP = 'TOP';
-export var TNUMBER = 'TNUMBER';
-export var TSTRING = 'TSTRING';
-export var TPAREN = 'TPAREN';
-export var TBRACKET = 'TBRACKET';
-export var TCOMMA = 'TCOMMA';
-export var TNAME = 'TNAME';
-export var TSEMICOLON = 'TSEMICOLON';
+export var TEOF = "TEOF";
+export var TOP = "TOP";
+export var TNUMBER = "TNUMBER";
+export var TSTRING = "TSTRING";
+export var TPAREN = "TPAREN";
+export var TBRACKET = "TBRACKET";
+export var TCOMMA = "TCOMMA";
+export var TNAME = "TNAME";
+export var TSEMICOLON = "TSEMICOLON";
 
 export function Token(type, value, index) {
   this.type = type;
@@ -15,5 +15,5 @@ export function Token(type, value, index) {
 }
 
 Token.prototype.toString = function () {
-  return this.type + ': ' + this.value;
+  return this.type + ": " + this.value;
 };

@@ -1,7 +1,7 @@
-import { TEOF } from './token';
-import { TokenStream } from './token-stream';
-import { ParserState } from './parser-state';
-import { Expression } from './expression';
+import { TEOF } from "./token";
+import { TokenStream } from "./token-stream";
+import { ParserState } from "./parser-state";
+import { Expression } from "./expression";
 import {
   add,
   sub,
@@ -49,8 +49,8 @@ import {
   expm1,
   log1p,
   log2,
-  sum
-} from './functions';
+  sum,
+} from "./functions";
 
 export function Parser(options) {
   this.options = options || {};
@@ -81,40 +81,41 @@ export function Parser(options) {
     floor: Math.floor,
     round: Math.round,
     trunc: Math.trunc || trunc,
-    '-': neg,
-    '+': Number,
+    "-": neg,
+    "+": Number,
     exp: Math.exp,
     not: not,
     length: stringOrArrayLength,
-    '!': factorial,
-    sign: Math.sign || sign
+    "!": factorial,
+    sign: Math.sign || sign,
   };
 
   this.binaryOps = {
-    '+': add,
-    '-': sub,
-    '*': mul,
-    '/': div,
-    '%': mod,
-    '^': Math.pow,
-    '||': concat,
-    '==': equal,
-    '!=': notEqual,
-    '>': greaterThan,
-    '<': lessThan,
-    '>=': greaterThanEqual,
-    '<=': lessThanEqual,
+    "+": add,
+    "-": sub,
+    "*": mul,
+    "/": div,
+    "%": mod,
+    "^": Math.pow,
+    "||": concat,
+    "==": equal,
+    "!=": notEqual,
+    ">": greaterThan,
+    "<": lessThan,
+    ">=": greaterThanEqual,
+    "<=": lessThanEqual,
     and: andOperator,
     or: orOperator,
     in: inOperator,
-    '=': setVar,
-    '[': arrayIndex
+    "=": setVar,
+    "[": arrayIndex,
   };
 
   this.ternaryOps = {
-    '?': condition
+    "?": condition,
   };
 
+  /** @type {Record<string, Function>} */
   this.functions = {
     random: random,
     fac: factorial,
@@ -132,27 +133,25 @@ export function Parser(options) {
     filter: arrayFilter,
     indexOf: stringOrArrayIndexOf,
     join: arrayJoin,
-    sum: sum
+    sum: sum,
   };
 
   this.consts = {
     E: Math.E,
     PI: Math.PI,
     true: true,
-    false: false
+    false: false,
   };
 }
 
 Parser.prototype.parse = function (expr) {
   var instr = [];
-  var parserState = new ParserState(
-    this,
-    new TokenStream(this, expr),
-    { allowMemberAccess: this.options.allowMemberAccess }
-  );
+  var parserState = new ParserState(this, new TokenStream(this, expr), {
+    allowMemberAccess: this.options.allowMemberAccess,
+  });
 
   parserState.parseExpression(instr);
-  parserState.expect(TEOF, 'EOF');
+  parserState.expect(TEOF, "EOF");
 
   return new Expression(instr, this);
 };
@@ -172,28 +171,28 @@ Parser.evaluate = function (expr, variables) {
 };
 
 var optionNameMap = {
-  '+': 'add',
-  '-': 'subtract',
-  '*': 'multiply',
-  '/': 'divide',
-  '%': 'remainder',
-  '^': 'power',
-  '!': 'factorial',
-  '<': 'comparison',
-  '>': 'comparison',
-  '<=': 'comparison',
-  '>=': 'comparison',
-  '==': 'comparison',
-  '!=': 'comparison',
-  '||': 'concatenate',
-  and: 'logical',
-  or: 'logical',
-  not: 'logical',
-  '?': 'conditional',
-  ':': 'conditional',
-  '=': 'assignment',
-  '[': 'array',
-  '()=': 'fndef'
+  "+": "add",
+  "-": "subtract",
+  "*": "multiply",
+  "/": "divide",
+  "%": "remainder",
+  "^": "power",
+  "!": "factorial",
+  "<": "comparison",
+  ">": "comparison",
+  "<=": "comparison",
+  ">=": "comparison",
+  "==": "comparison",
+  "!=": "comparison",
+  "||": "concatenate",
+  and: "logical",
+  or: "logical",
+  not: "logical",
+  "?": "conditional",
+  ":": "conditional",
+  "=": "assignment",
+  "[": "array",
+  "()=": "fndef",
 };
 
 function getOptionName(op) {

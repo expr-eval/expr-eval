@@ -1,4 +1,15 @@
-import { Token, TEOF, TOP, TNUMBER, TSTRING, TPAREN, TBRACKET, TCOMMA, TNAME, TSEMICOLON } from './token';
+import {
+  Token,
+  TEOF,
+  TOP,
+  TNUMBER,
+  TSTRING,
+  TPAREN,
+  TBRACKET,
+  TCOMMA,
+  TNAME,
+  TSEMICOLON,
+} from "./token";
 
 export function TokenStream(parser, expression) {
   this.pos = 0;
@@ -30,25 +41,29 @@ TokenStream.prototype.restore = function () {
 
 TokenStream.prototype.next = function () {
   if (this.pos >= this.expression.length) {
-    return this.newToken(TEOF, 'EOF');
+    return this.newToken(TEOF, "EOF");
   }
 
   if (this.isWhitespace() || this.isComment()) {
     return this.next();
-  } else if (this.isRadixInteger() ||
-      this.isNumber() ||
-      this.isOperator() ||
-      this.isString() ||
-      this.isParen() ||
-      this.isBracket() ||
-      this.isComma() ||
-      this.isSemicolon() ||
-      this.isNamedOp() ||
-      this.isConst() ||
-      this.isName()) {
+  } else if (
+    this.isRadixInteger() ||
+    this.isNumber() ||
+    this.isOperator() ||
+    this.isString() ||
+    this.isParen() ||
+    this.isBracket() ||
+    this.isComma() ||
+    this.isSemicolon() ||
+    this.isNamedOp() ||
+    this.isConst() ||
+    this.isName()
+  ) {
     return this.current;
   } else {
-    this.parseError('Unknown character "' + this.expression.charAt(this.pos) + '"');
+    this.parseError(
+      'Unknown character "' + this.expression.charAt(this.pos) + '"',
+    );
   }
 };
 
@@ -57,13 +72,17 @@ TokenStream.prototype.isString = function () {
   var startPos = this.pos;
   var quote = this.expression.charAt(startPos);
 
-  if (quote === '\'' || quote === '"') {
+  if (quote === "'" || quote === '"') {
     var index = this.expression.indexOf(quote, startPos + 1);
     while (index >= 0 && this.pos < this.expression.length) {
       this.pos = index + 1;
-      if (this.expression.charAt(index - 1) !== '\\') {
+      if (this.expression.charAt(index - 1) !== "\\") {
         var rawString = this.expression.substring(startPos + 1, index);
-        this.current = this.newToken(TSTRING, this.unescape(rawString), startPos);
+        this.current = this.newToken(
+          TSTRING,
+          this.unescape(rawString),
+          startPos,
+        );
         r = true;
         break;
       }
@@ -75,7 +94,7 @@ TokenStream.prototype.isString = function () {
 
 TokenStream.prototype.isParen = function () {
   var c = this.expression.charAt(this.pos);
-  if (c === '(' || c === ')') {
+  if (c === "(" || c === ")") {
     this.current = this.newToken(TPAREN, c);
     this.pos++;
     return true;
@@ -85,7 +104,7 @@ TokenStream.prototype.isParen = function () {
 
 TokenStream.prototype.isBracket = function () {
   var c = this.expression.charAt(this.pos);
-  if ((c === '[' || c === ']') && this.isOperatorEnabled('[')) {
+  if ((c === "[" || c === "]") && this.isOperatorEnabled("[")) {
     this.current = this.newToken(TBRACKET, c);
     this.pos++;
     return true;
@@ -95,8 +114,8 @@ TokenStream.prototype.isBracket = function () {
 
 TokenStream.prototype.isComma = function () {
   var c = this.expression.charAt(this.pos);
-  if (c === ',') {
-    this.current = this.newToken(TCOMMA, ',');
+  if (c === ",") {
+    this.current = this.newToken(TCOMMA, ",");
     this.pos++;
     return true;
   }
@@ -105,8 +124,8 @@ TokenStream.prototype.isComma = function () {
 
 TokenStream.prototype.isSemicolon = function () {
   var c = this.expression.charAt(this.pos);
-  if (c === ';') {
-    this.current = this.newToken(TSEMICOLON, ';');
+  if (c === ";") {
+    this.current = this.newToken(TSEMICOLON, ";");
     this.pos++;
     return true;
   }
@@ -119,7 +138,7 @@ TokenStream.prototype.isConst = function () {
   for (; i < this.expression.length; i++) {
     var c = this.expression.charAt(i);
     if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos || (c !== '_' && c !== '.' && (c < '0' || c > '9'))) {
+      if (i === this.pos || (c !== "_" && c !== "." && (c < "0" || c > "9"))) {
         break;
       }
     }
@@ -141,14 +160,17 @@ TokenStream.prototype.isNamedOp = function () {
   for (; i < this.expression.length; i++) {
     var c = this.expression.charAt(i);
     if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos || (c !== '_' && (c < '0' || c > '9'))) {
+      if (i === this.pos || (c !== "_" && (c < "0" || c > "9"))) {
         break;
       }
     }
   }
   if (i > startPos) {
     var str = this.expression.substring(startPos, i);
-    if (this.isOperatorEnabled(str) && (str in this.binaryOps || str in this.unaryOps || str in this.ternaryOps)) {
+    if (
+      this.isOperatorEnabled(str) &&
+      (str in this.binaryOps || str in this.unaryOps || str in this.ternaryOps)
+    ) {
       this.current = this.newToken(TOP, str);
       this.pos += str.length;
       return true;
@@ -164,12 +186,16 @@ TokenStream.prototype.isName = function () {
   for (; i < this.expression.length; i++) {
     var c = this.expression.charAt(i);
     if (c.toUpperCase() === c.toLowerCase()) {
-      if (i === this.pos && (c === '$' || c === '_')) {
-        if (c === '_') {
+      if (i === this.pos && (c === "$" || c === "_")) {
+        if (c === "_") {
           hasLetter = true;
         }
         continue;
-      } else if (i === this.pos || !hasLetter || (c !== '_' && (c < '0' || c > '9'))) {
+      } else if (
+        i === this.pos ||
+        !hasLetter ||
+        (c !== "_" && (c < "0" || c > "9"))
+      ) {
         break;
       }
     } else {
@@ -188,7 +214,7 @@ TokenStream.prototype.isName = function () {
 TokenStream.prototype.isWhitespace = function () {
   var r = false;
   var c = this.expression.charAt(this.pos);
-  while (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+  while (c === " " || c === "\t" || c === "\n" || c === "\r") {
     r = true;
     this.pos++;
     if (this.pos >= this.expression.length) {
@@ -202,7 +228,7 @@ TokenStream.prototype.isWhitespace = function () {
 var codePointPattern = /^[0-9a-f]{4}$/i;
 
 TokenStream.prototype.unescape = function (v) {
-  var index = v.indexOf('\\');
+  var index = v.indexOf("\\");
   if (index < 0) {
     return v;
   }
@@ -211,38 +237,38 @@ TokenStream.prototype.unescape = function (v) {
   while (index >= 0) {
     var c = v.charAt(++index);
     switch (c) {
-      case '\'':
-        buffer += '\'';
+      case "'":
+        buffer += "'";
         break;
       case '"':
         buffer += '"';
         break;
-      case '\\':
-        buffer += '\\';
+      case "\\":
+        buffer += "\\";
         break;
-      case '/':
-        buffer += '/';
+      case "/":
+        buffer += "/";
         break;
-      case 'b':
-        buffer += '\b';
+      case "b":
+        buffer += "\b";
         break;
-      case 'f':
-        buffer += '\f';
+      case "f":
+        buffer += "\f";
         break;
-      case 'n':
-        buffer += '\n';
+      case "n":
+        buffer += "\n";
         break;
-      case 'r':
-        buffer += '\r';
+      case "r":
+        buffer += "\r";
         break;
-      case 't':
-        buffer += '\t';
+      case "t":
+        buffer += "\t";
         break;
-      case 'u':
+      case "u":
         // interpret the following 4 characters as the hex of the unicode code point
         var codePoint = v.substring(index + 1, index + 5);
         if (!codePointPattern.test(codePoint)) {
-          this.parseError('Illegal escape sequence: \\u' + codePoint);
+          this.parseError("Illegal escape sequence: \\u" + codePoint);
         }
         buffer += String.fromCharCode(parseInt(codePoint, 16));
         index += 4;
@@ -251,7 +277,7 @@ TokenStream.prototype.unescape = function (v) {
         throw this.parseError('Illegal escape sequence: "\\' + c + '"');
     }
     ++index;
-    var backslash = v.indexOf('\\', index);
+    var backslash = v.indexOf("\\", index);
     buffer += v.substring(index, backslash < 0 ? v.length : backslash);
     index = backslash;
   }
@@ -261,8 +287,8 @@ TokenStream.prototype.unescape = function (v) {
 
 TokenStream.prototype.isComment = function () {
   var c = this.expression.charAt(this.pos);
-  if (c === '/' && this.expression.charAt(this.pos + 1) === '*') {
-    this.pos = this.expression.indexOf('*/', this.pos) + 2;
+  if (c === "/" && this.expression.charAt(this.pos + 1) === "*") {
+    this.pos = this.expression.indexOf("*/", this.pos) + 2;
     if (this.pos === 1) {
       this.pos = this.expression.length;
     }
@@ -274,18 +300,21 @@ TokenStream.prototype.isComment = function () {
 TokenStream.prototype.isRadixInteger = function () {
   var pos = this.pos;
 
-  if (pos >= this.expression.length - 2 || this.expression.charAt(pos) !== '0') {
+  if (
+    pos >= this.expression.length - 2 ||
+    this.expression.charAt(pos) !== "0"
+  ) {
     return false;
   }
   ++pos;
 
   var radix;
   var validDigit;
-  if (this.expression.charAt(pos) === 'x') {
+  if (this.expression.charAt(pos) === "x") {
     radix = 16;
     validDigit = /^[0-9a-f]$/i;
     ++pos;
-  } else if (this.expression.charAt(pos) === 'b') {
+  } else if (this.expression.charAt(pos) === "b") {
     radix = 2;
     validDigit = /^[01]$/i;
     ++pos;
@@ -307,7 +336,10 @@ TokenStream.prototype.isRadixInteger = function () {
   }
 
   if (valid) {
-    this.current = this.newToken(TNUMBER, parseInt(this.expression.substring(startPos, pos), radix));
+    this.current = this.newToken(
+      TNUMBER,
+      parseInt(this.expression.substring(startPos, pos), radix),
+    );
     this.pos = pos;
   }
   return valid;
@@ -324,8 +356,8 @@ TokenStream.prototype.isNumber = function () {
 
   while (pos < this.expression.length) {
     c = this.expression.charAt(pos);
-    if ((c >= '0' && c <= '9') || (!foundDot && c === '.')) {
-      if (c === '.') {
+    if ((c >= "0" && c <= "9") || (!foundDot && c === ".")) {
+      if (c === ".") {
         foundDot = true;
       } else {
         foundDigits = true;
@@ -341,15 +373,15 @@ TokenStream.prototype.isNumber = function () {
     resetPos = pos;
   }
 
-  if (c === 'e' || c === 'E') {
+  if (c === "e" || c === "E") {
     pos++;
     var acceptSign = true;
     var validExponent = false;
     while (pos < this.expression.length) {
       c = this.expression.charAt(pos);
-      if (acceptSign && (c === '+' || c === '-')) {
+      if (acceptSign && (c === "+" || c === "-")) {
         acceptSign = false;
-      } else if (c >= '0' && c <= '9') {
+      } else if (c >= "0" && c <= "9") {
         validExponent = true;
         acceptSign = false;
       } else {
@@ -364,7 +396,10 @@ TokenStream.prototype.isNumber = function () {
   }
 
   if (valid) {
-    this.current = this.newToken(TNUMBER, parseFloat(this.expression.substring(startPos, pos)));
+    this.current = this.newToken(
+      TNUMBER,
+      parseFloat(this.expression.substring(startPos, pos)),
+    );
     this.pos = pos;
   } else {
     this.pos = resetPos;
@@ -376,41 +411,51 @@ TokenStream.prototype.isOperator = function () {
   var startPos = this.pos;
   var c = this.expression.charAt(this.pos);
 
-  if (c === '+' || c === '-' || c === '*' || c === '/' || c === '%' || c === '^' || c === '?' || c === ':' || c === '.') {
+  if (
+    c === "+" ||
+    c === "-" ||
+    c === "*" ||
+    c === "/" ||
+    c === "%" ||
+    c === "^" ||
+    c === "?" ||
+    c === ":" ||
+    c === "."
+  ) {
     this.current = this.newToken(TOP, c);
-  } else if (c === '∙' || c === '•') {
-    this.current = this.newToken(TOP, '*');
-  } else if (c === '>') {
-    if (this.expression.charAt(this.pos + 1) === '=') {
-      this.current = this.newToken(TOP, '>=');
+  } else if (c === "∙" || c === "•") {
+    this.current = this.newToken(TOP, "*");
+  } else if (c === ">") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, ">=");
       this.pos++;
     } else {
-      this.current = this.newToken(TOP, '>');
+      this.current = this.newToken(TOP, ">");
     }
-  } else if (c === '<') {
-    if (this.expression.charAt(this.pos + 1) === '=') {
-      this.current = this.newToken(TOP, '<=');
+  } else if (c === "<") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "<=");
       this.pos++;
     } else {
-      this.current = this.newToken(TOP, '<');
+      this.current = this.newToken(TOP, "<");
     }
-  } else if (c === '|') {
-    if (this.expression.charAt(this.pos + 1) === '|') {
-      this.current = this.newToken(TOP, '||');
+  } else if (c === "|") {
+    if (this.expression.charAt(this.pos + 1) === "|") {
+      this.current = this.newToken(TOP, "||");
       this.pos++;
     } else {
       return false;
     }
-  } else if (c === '=') {
-    if (this.expression.charAt(this.pos + 1) === '=') {
-      this.current = this.newToken(TOP, '==');
+  } else if (c === "=") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "==");
       this.pos++;
     } else {
       this.current = this.newToken(TOP, c);
     }
-  } else if (c === '!') {
-    if (this.expression.charAt(this.pos + 1) === '=') {
-      this.current = this.newToken(TOP, '!=');
+  } else if (c === "!") {
+    if (this.expression.charAt(this.pos + 1) === "=") {
+      this.current = this.newToken(TOP, "!=");
       this.pos++;
     } else {
       this.current = this.newToken(TOP, c);
@@ -439,16 +484,18 @@ TokenStream.prototype.getCoordinates = function () {
   do {
     line++;
     column = this.pos - newline;
-    newline = this.expression.indexOf('\n', newline + 1);
+    newline = this.expression.indexOf("\n", newline + 1);
   } while (newline >= 0 && newline < this.pos);
 
   return {
     line: line,
-    column: column
+    column: column,
   };
 };
 
 TokenStream.prototype.parseError = function (msg) {
   var coords = this.getCoordinates();
-  throw new Error('parse error [' + coords.line + ':' + coords.column + ']: ' + msg);
+  throw new Error(
+    "parse error [" + coords.line + ":" + coords.column + "]: " + msg,
+  );
 };

@@ -1,4 +1,14 @@
-import { Instruction, IOP1, IOP2, IOP3, IVAR, IEXPR, ternaryInstruction, binaryInstruction, unaryInstruction } from './instruction';
+import {
+  Instruction,
+  IOP1,
+  IOP2,
+  IOP3,
+  IVAR,
+  IEXPR,
+  ternaryInstruction,
+  binaryInstruction,
+  unaryInstruction,
+} from "./instruction";
 
 export default function substitute(tokens, variable, expr) {
   var newexpression = [];
@@ -21,7 +31,9 @@ export default function substitute(tokens, variable, expr) {
         newexpression.push(replitem);
       }
     } else if (type === IEXPR) {
-      newexpression.push(new Instruction(IEXPR, substitute(item.value, variable, expr)));
+      newexpression.push(
+        new Instruction(IEXPR, substitute(item.value, variable, expr)),
+      );
     } else {
       newexpression.push(item);
     }

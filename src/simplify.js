@@ -1,6 +1,23 @@
-import { Instruction, INUMBER, IOP1, IOP2, IOP3, IVAR, IVARNAME, IEXPR, IMEMBER, IARRAY } from './instruction';
+import {
+  Instruction,
+  INUMBER,
+  IOP1,
+  IOP2,
+  IOP3,
+  IVAR,
+  IVARNAME,
+  IEXPR,
+  IMEMBER,
+  IARRAY,
+} from "./instruction";
 
-export default function simplify(tokens, unaryOps, binaryOps, ternaryOps, values) {
+export default function simplify(
+  tokens,
+  unaryOps,
+  binaryOps,
+  ternaryOps,
+  values,
+) {
   var nstack = [];
   var newexpression = [];
   var n1, n2, n3;
@@ -10,9 +27,20 @@ export default function simplify(tokens, unaryOps, binaryOps, ternaryOps, values
     var type = item.type;
     if (type === INUMBER || type === IVARNAME) {
       if (Array.isArray(item.value)) {
-        nstack.push.apply(nstack, simplify(item.value.map(function (x) {
-          return new Instruction(INUMBER, x);
-        }).concat(new Instruction(IARRAY, item.value.length)), unaryOps, binaryOps, ternaryOps, values));
+        nstack.push.apply(
+          nstack,
+          simplify(
+            item.value
+              .map(function (x) {
+                return new Instruction(INUMBER, x);
+              })
+              .concat(new Instruction(IARRAY, item.value.length)),
+            unaryOps,
+            binaryOps,
+            ternaryOps,
+            values,
+          ),
+        );
       } else {
         nstack.push(item);
       }
@@ -29,7 +57,7 @@ export default function simplify(tokens, unaryOps, binaryOps, ternaryOps, values
       n3 = nstack.pop();
       n2 = nstack.pop();
       n1 = nstack.pop();
-      if (item.value === '?') {
+      if (item.value === "?") {
         nstack.push(n1.value ? n2.value : n3.value);
       } else {
         f = ternaryOps[item.value];
@@ -45,11 +73,16 @@ export default function simplify(tokens, unaryOps, binaryOps, ternaryOps, values
       while (nstack.length > 0) {
         newexpression.push(nstack.shift());
       }
-      newexpression.push(new Instruction(IEXPR, simplify(item.value, unaryOps, binaryOps, ternaryOps, values)));
+      newexpression.push(
+        new Instruction(
+          IEXPR,
+          simplify(item.value, unaryOps, binaryOps, ternaryOps, values),
+        ),
+      );
     } else if (type === IMEMBER && nstack.length > 0) {
       n1 = nstack.pop();
       nstack.push(new Instruction(INUMBER, n1.value[item.value]));
-    /* } else if (type === IARRAY && nstack.length >= item.value) {
+      /* } else if (type === IARRAY && nstack.length >= item.value) {
       var length = item.value;
       while (length-- > 0) {
         newexpression.push(nstack.pop());

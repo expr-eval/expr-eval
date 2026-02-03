@@ -1,5 +1,5 @@
-import { IVAR, IMEMBER, IEXPR, IVARNAME } from './instruction';
-import contains from './contains';
+import { IVAR, IMEMBER, IEXPR, IVARNAME } from "./instruction";
+import contains from "./contains";
 
 export default function getSymbols(tokens, symbols, options) {
   options = options || {};
@@ -20,7 +20,7 @@ export default function getSymbols(tokens, symbols, options) {
         prevVar = item.value;
       }
     } else if (item.type === IMEMBER && withMembers && prevVar !== null) {
-      prevVar += '.' + item.value;
+      prevVar += "." + item.value;
     } else if (item.type === IEXPR) {
       getSymbols(item.value, symbols, options);
     } else if (prevVar !== null) {
