@@ -15,7 +15,4 @@ import { Parser } from "./src/parser";
 export { Expression, Parser };
 
 // Backwards compatibility
-export default {
-  Parser: Parser,
-  Expression: Expression,
-};
+export default { Parser, Expression };

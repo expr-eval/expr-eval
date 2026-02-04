@@ -11,15 +11,19 @@ import {
   IMEMBER,
   IENDSTATEMENT,
   IARRAY,
+  Instruction,
 } from "./instruction";
 
-export default function expressionToString(tokens, toJS) {
-  var nstack = [];
-  var n1, n2, n3;
-  var f, args, argCount;
-  for (var i = 0; i < tokens.length; i++) {
-    var item = tokens[i];
-    var type = item.type;
+export default function expressionToString(
+  tokens: Instruction[],
+  toJS?: boolean,
+): string {
+  let nstack: string[] = [];
+  let n1: string, n2: string, n3: string;
+  let f: string, args: string[], argCount: number;
+  for (let i = 0; i < tokens.length; i++) {
+    const item = tokens[i];
+    const type = item.type;
     if (type === INUMBER) {
       if (typeof item.value === "number" && item.value < 0) {
         nstack.push("(" + item.value + ")");
@@ -29,9 +33,9 @@ export default function expressionToString(tokens, toJS) {
         nstack.push(escapeValue(item.value));
       }
     } else if (type === IOP2) {
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      f = item.value;
+      n2 = nstack.pop() as string;
+      n1 = nstack.pop() as string;
+      f = item.value as string;
       if (toJS) {
         if (f === "^") {
           nstack.push("Math.pow(" + n1 + ", " + n2 + ")");
@@ -64,20 +68,20 @@ export default function expressionToString(tokens, toJS) {
         }
       }
     } else if (type === IOP3) {
-      n3 = nstack.pop();
-      n2 = nstack.pop();
-      n1 = nstack.pop();
-      f = item.value;
+      n3 = nstack.pop() as string;
+      n2 = nstack.pop() as string;
+      n1 = nstack.pop() as string;
+      f = item.value as string;
       if (f === "?") {
         nstack.push("(" + n1 + " ? " + n2 + " : " + n3 + ")");
       } else {
         throw new Error("invalid Expression");
       }
     } else if (type === IVAR || type === IVARNAME) {
-      nstack.push(item.value);
+      nstack.push(item.value as string);
     } else if (type === IOP1) {
-      n1 = nstack.pop();
-      f = item.value;
+      n1 = nstack.pop() as string;
+      f = item.value as string;
       if (f === "-" || f === "+") {
         nstack.push("(" + f + n1 + ")");
       } else if (toJS) {
@@ -94,21 +98,21 @@ export default function expressionToString(tokens, toJS) {
         nstack.push("(" + f + " " + n1 + ")");
       }
     } else if (type === IFUNCALL) {
-      argCount = item.value;
+      argCount = item.value as number;
       args = [];
       while (argCount-- > 0) {
-        args.unshift(nstack.pop());
+        args.unshift(nstack.pop() as string);
       }
-      f = nstack.pop();
+      f = nstack.pop() as string;
       nstack.push(f + "(" + args.join(", ") + ")");
     } else if (type === IFUNDEF) {
-      n2 = nstack.pop();
-      argCount = item.value;
+      n2 = nstack.pop() as string;
+      argCount = item.value as number;
       args = [];
       while (argCount-- > 0) {
-        args.unshift(nstack.pop());
+        args.unshift(nstack.pop() as string);
       }
-      n1 = nstack.pop();
+      n1 = nstack.pop() as string;
       if (toJS) {
         nstack.push(
           "(" +
@@ -123,17 +127,19 @@ export default function expressionToString(tokens, toJS) {
         nstack.push("(" + n1 + "(" + args.join(", ") + ") = " + n2 + ")");
       }
     } else if (type === IMEMBER) {
-      n1 = nstack.pop();
+      n1 = nstack.pop() as string;
       nstack.push(n1 + "." + item.value);
     } else if (type === IARRAY) {
-      argCount = item.value;
+      argCount = item.value as number;
       args = [];
       while (argCount-- > 0) {
-        args.unshift(nstack.pop());
+        args.unshift(nstack.pop() as string);
       }
       nstack.push("[" + args.join(", ") + "]");
     } else if (type === IEXPR) {
-      nstack.push("(" + expressionToString(item.value, toJS) + ")");
+      nstack.push(
+        "(" + expressionToString(item.value as Instruction[], toJS) + ")",
+      );
     } else if (type === IENDSTATEMENT) {
       // eslint-disable no-empty
     } else {
@@ -150,11 +156,11 @@ export default function expressionToString(tokens, toJS) {
   return String(nstack[0]);
 }
 
-function escapeValue(v) {
+function escapeValue(v: unknown): string {
   if (typeof v === "string") {
     return JSON.stringify(v)
       .replace(/\u2028/g, "\\u2028")
       .replace(/\u2029/g, "\\u2029");
   }
-  return v;
+  return v as string;
 }

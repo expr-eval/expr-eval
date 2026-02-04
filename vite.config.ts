@@ -6,7 +6,7 @@ export default defineConfig({
     minify: true,
     lib: {
       entry: {
-        index: "index.js",
+        index: "index.ts",
       },
       formats: ["es", "cjs"],
     },
