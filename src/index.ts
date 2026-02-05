@@ -9,16 +9,10 @@
  but don't feel like you have to let me know or ask permission.
 */
 
-import { Expression } from './src/expression';
-import { Parser } from './src/parser';
+import { Expression } from "@/expression";
+import { Parser } from "@/parser";
 
-export {
-  Expression,
-  Parser
-};
+export { Expression, Parser };
 
 // Backwards compatibility
-export default {
-  Parser: Parser,
-  Expression: Expression
-};
+export default { Parser, Expression };
