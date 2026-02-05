@@ -55,7 +55,10 @@ jobs:
 
       - name: Bump version + create tag
         run: |
-          npm version "${{ inputs.release_type }}" -m "chore(release): %s"
+          npm version "${{ inputs.release_type }}" \
+            -m "chore(release): %s
+
+          [skip ci]"
 
       - name: Push commit + tag
         if: ${{ inputs.dry_run == false }}
