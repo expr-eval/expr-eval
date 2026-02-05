@@ -30,7 +30,7 @@ function isAllowedFunc(
   values: Record<string, unknown>,
 ) {
   // function definition is included in registered functions
-  if (Object.values(expr.functions).includes(f)) return true;
+  if (Object.values(expr.functions).includes(f as OpFunc)) return true;
 
   for (const v of Object.values(values)) {
     if (typeof v === "object" && v !== null) {
@@ -123,7 +123,7 @@ export default function evaluate(
       } else if (item.value === "or") {
         nstack.push(n1 ? true : !!evaluate(n2, expr, values));
       } else if (item.value === "=") {
-        f = expr.binaryOps[item.value];
+        f = expr.binaryOps[item.value] as OpFunc;
         nstack.push(f(n1, evaluate(n2, expr, values), values));
       } else {
         const lookup = item.value as keyof typeof expr.binaryOps;
@@ -139,7 +139,9 @@ export default function evaluate(
       if (item.value === "?") {
         nstack.push(evaluate(n1 ? n2 : n3, expr, values));
       } else {
-        f = expr.ternaryOps[item.value as keyof typeof expr.ternaryOps];
+        f = expr.ternaryOps[
+          item.value as keyof typeof expr.ternaryOps
+        ] as OpFunc;
         nstack.push(
           f(
             resolveExpression(n1, values),

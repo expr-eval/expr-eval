@@ -3,17 +3,17 @@
   "version": "3.0.0",
   "description": "Mathematical expression evaluator fork with exports map, prototype pollution and code injection security fixes",
   "type": "module",
-  "main": "dist/bundle.js",
-  "module": "dist/index.mjs",
-  "typings": "parser.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "engines": {
     "node": ">=20.0.0"
   },
   "exports": {
     ".": {
-      "types": "./parser.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/bundle.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "devDependencies": {
@@ -28,6 +28,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.18"
   },
   "scripts": {
@@ -36,8 +37,7 @@
     "build": "vite build"
   },
   "files": [
-    "dist/",
-    "parser.d.ts"
+    "dist/"
   ],
   "repository": {
     "type": "git",

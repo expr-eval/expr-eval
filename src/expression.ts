@@ -69,11 +69,11 @@ export class Expression {
   }
 
   toJSFunction(
-    param: string,
-    variables: ValueObject,
+    param?: string,
+    variables?: ValueObject,
   ): (...args: Value[]) => Value {
     const f = new Function(
-      param,
+      param as string,
       "with(this.functions) with (this.ternaryOps) with (this.binaryOps) with (this.unaryOps) { return " +
         expressionToString(this.simplify(variables).tokens, true) +
         "; }",

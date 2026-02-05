@@ -912,13 +912,14 @@ describe("Parser", function () {
           fndef: true,
         },
       });
+      /** @type {import("../src/instruction").ValueObject} */
       var obj = {};
       assert.strictEqual(
         parser.evaluate("f(x) = x * x", obj) instanceof Function,
         true,
       );
-      // @ts-expect-error
-      assert.strictEqual(obj.f instanceof Function, true);
+      const fn = obj.f;
+      assert.strictEqual(fn instanceof Function, true);
       // @ts-expect-error
       assert.strictEqual(obj.f(3), 9);
     });
