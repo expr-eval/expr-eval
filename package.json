@@ -1,5 +1,5 @@
 {
-  "name": "expr-eval",
+  "name": "@expr-eval/js",
   "version": "3.0.0",
   "description": "Mathematical expression evaluator fork with exports map, prototype pollution and code injection security fixes",
   "type": "module",
@@ -7,7 +7,7 @@
   "module": "dist/index.js",
   "typings": "dist/index.d.ts",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=16.9.0"
   },
   "exports": {
     ".": {
@@ -56,5 +56,8 @@
   "bugs": {
     "url": "https://github.com/expr-eval/expr-eval/issues"
   },
-  "homepage": "https://github.com/expr-eval/expr-eval#readme"
+  "homepage": "https://github.com/expr-eval/expr-eval#readme",
+  "publishConfig": {
+    "access": "public"
+  }
 }

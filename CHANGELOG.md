@@ -1,18 +1,14 @@
 # Changelog
 
-## [3.0.1] - 2025-12-07
-
-### Added
-
-- Additional fix for member access issue identified by @huydoppaz in https://github.com/silentmatt/expr-eval/issues/289 and advisory [CVE-2025-12735](https://github.com/advisories/GHSA-jc85-fpwf-qm7x), same as fix in previous version.
-
-## [3.0.0] - 2025-11-07
+## [3.0.0] - 2026-02-05
 
 ### Added
 
 - BREAKING: `.evaluate()` no longer allows arbitrary and potentially malicious context to be passed for custom function strings. Such functions need to be defined on `Parser.functions`, e.g. `Parser.functions.f = () => {}` rather than `.evaluate({ f: () => {} })`. This fixes [CVE-2025-12735](https://github.com/advisories/GHSA-jc85-fpwf-qm7x).
 - BREAKING: add exports map to make usage with modern JS environments smoother, not requiring bundlers.
 - BREAKING: require Node 16.9.0 minimum, to support `Object.hasOwn` which is safer than its predecessor `Object.prototype.hasOwnPropery`.
+- BREAKING: built files have new paths, if you imported by full path, it may break.
+- Additional fix for member access issue identified by @huydoppaz in https://github.com/silentmatt/expr-eval/issues/289 and advisory [CVE-2025-12735](https://github.com/advisories/GHSA-jc85-fpwf-qm7x), same as fix in previous version.
 
 ## [2.0.2] - 2019-09-28
 
@@ -21,13 +17,11 @@
 - Added non-default exports when using the ES module format. This allows `import { Parser } from 'expr-eval'` to work in TypeScript. The default export is still available for backward compatibility.
 - This fork publishes a security vulnerability fix for prototype pollution. This was committed to the origin project but never published to NPM.
 
-
 ## [2.0.1] - 2019-09-10
 
 ### Added
 
 - Added the `if(condition, trueValue, falseValue)` function back. The ternary operator is still recommended if you need to only evaluate one branch, but we're keep this as an option at least for now.
-
 
 ## [2.0.0] - 2019-09-07
 
