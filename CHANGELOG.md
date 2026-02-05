@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.1.0] - 2026-02-05
+
+### Added
+
+- BREAKING: related to security, this will simplify check for allowed functions.
+
+this will now throw error:
+
+```js
+Parser.evaluate("fn.max(0,10)", { fn: { max: Math.max } });
+```
+
+this is still allowed:
+
+```js
+Parser.evaluate("max(0,10)");
+```
+
+See documentation about how to properly add functions to the parser.
+
 ## [3.0.0] - 2026-02-05
 
 ### Added

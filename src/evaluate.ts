@@ -24,66 +24,20 @@ let functionCounter = 0;
  * Checks if a function reference 'f' is explicitly allowed to be executed.
  * This logic is the core security allowance gate.
  */
-function isAllowedFunc(
-  f: () => unknown,
-  expr: Expression,
-  values: Record<string, unknown>,
-) {
-  // function definition is included in registered functions
-  if (Object.values(expr.functions).includes(f as OpFunc)) return true;
+function isAllowedFunc(f: () => unknown, expr: Expression): boolean {
+  const maps = [
+    expr.functions,
+    expr.unaryOps,
+    expr.ternaryOps,
+    expr.binaryOps,
+  ] as const;
 
-  for (const v of Object.values(values)) {
-    if (typeof v === "object" && v !== null) {
-      for (const subV of Object.values(v)) {
-        if (subV === f) {
-          const SAFE_MATH = Object.freeze({
-            abs: Math.abs,
-            acos: Math.acos,
-            asin: Math.asin,
-            atan: Math.atan,
-            atan2: Math.atan2,
-            ceil: Math.ceil,
-            clz32: Math.clz32,
-            cos: Math.cos,
-            exp: Math.exp,
-            floor: Math.floor,
-            imul: Math.imul,
-            fround: Math.fround,
-            f16round: Math.f16round,
-            log: Math.log,
-            max: Math.max,
-            min: Math.min,
-            pow: Math.pow,
-            random: Math.random,
-            round: Math.round,
-            sin: Math.sin,
-            sqrt: Math.sqrt,
-            tan: Math.tan,
-            log10: Math.log10,
-            log2: Math.log2,
-            log1p: Math.log1p,
-            expm1: Math.expm1,
-            cosh: Math.cosh,
-            sinh: Math.sinh,
-            tanh: Math.tanh,
-            acosh: Math.acosh,
-            asinh: Math.asinh,
-            atanh: Math.atanh,
-            hypot: Math.hypot,
-            trunc: Math.trunc,
-            sign: Math.sign,
-            cbrt: Math.cbrt,
-          });
-          // allow Math functions
-          for (const fn of Object.values(SAFE_MATH)) {
-            if (fn === subV) return true;
-          }
-          // function definition is included in registered functions
-          return Object.values(expr.functions).includes(subV);
-        }
-      }
+  for (const m of maps) {
+    for (const v of Object.values(m)) {
+      if (v === f) return true;
     }
   }
+
   return false;
 }
 
@@ -168,7 +122,7 @@ export default function evaluate(
         const v = values[strValue];
 
         if (v !== undefined) {
-          if (typeof v === "function" && !isAllowedFunc(v, expr, values)) {
+          if (typeof v === "function" && !isAllowedFunc(v, expr)) {
             /* function is not registered, not marked safe, and not a member function. BLOCKED. */
             throw new SecurityError(
               "Variable references an unallowed function: " + item.value,
@@ -192,7 +146,7 @@ export default function evaluate(
         args.unshift(resolveExpression(expr, values));
       }
       f = nstack.pop() as OpFunc;
-      if (!isAllowedFunc(f, expr, values)) {
+      if (!isAllowedFunc(f, expr)) {
         throw new SecurityError("Is not an allowed function.");
       }
       if (typeof f.apply === "function") {
@@ -239,7 +193,7 @@ export default function evaluate(
       if (
         typeof n1 === "object" &&
         typeof n1[lookup] === "function" &&
-        !isAllowedFunc(n1[lookup] as OpFunc, expr, values)
+        !isAllowedFunc(n1[lookup] as OpFunc, expr)
       ) {
         throw new SecurityError("Is not an allowed function in MEMBER.");
       }

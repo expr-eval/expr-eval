@@ -1,5 +1,6 @@
 import { assert } from "vitest";
 import { Parser } from "@/parser";
+import { SecurityError } from "@/evaluate";
 
 describe("Expression", function () {
   describe("evaluate()", function () {
@@ -296,13 +297,12 @@ describe("Expression", function () {
     });
 
     it("fn.max(conf.limits.lower, conf.limits.upper)", function () {
-      assert.strictEqual(
+      assert.throws(() => {
         Parser.evaluate("fn.max(conf.limits.lower, conf.limits.upper)", {
           fn: { max: Math.max },
           conf: { limits: { lower: 4, upper: 9 } },
-        }),
-        9,
-      );
+        });
+      }, SecurityError);
     });
 
     it('[1, 2+3, 4*5, 6/7, [8, 9, 10], "1" || "1"]', function () {
