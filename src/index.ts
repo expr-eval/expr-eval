@@ -13,6 +13,14 @@ import { Expression } from "@/expression";
 import { Parser } from "@/parser";
 
 export { Expression, Parser };
+export { Instruction } from "@/instruction";
+export type {
+  Value,
+  ValueObject,
+  InstructionType,
+  InstructionValue,
+  ExpressionFunc,
+} from "@/instruction";
 
 // Backwards compatibility
 export default { Parser, Expression };
