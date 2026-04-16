@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     dts({
       tsconfigPath: "./tsconfig.build.json",
-      insertTypesEntry: true,
+      rollupTypes: true,
     }),
   ],
   build: {
