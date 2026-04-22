@@ -17,11 +17,10 @@ export default defineConfig({
       },
       formats: ["es", "cjs"],
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         dir: "./dist",
         exports: "named",
-        interop: "compat",
       },
     },
   },
