@@ -129,12 +129,7 @@ export default class TokenStream {
     }
     ++pos;
 
-    let radix =
-      pos < this.expression.length && this.expression.charAt(pos) === "x"
-        ? 16
-        : pos < this.expression.length && this.expression.charAt(pos) === "b"
-          ? 2
-          : 8;
+    let radix;
     let validDigit;
     if (this.expression.charAt(pos) === "x") {
       radix = 16;
