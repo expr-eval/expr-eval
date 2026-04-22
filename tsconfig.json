@@ -12,12 +12,11 @@
     "checkJs": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "declaration": true,
     "declarationMap": true,
     "types": ["node", "vite/client", "vitest/globals"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "outDir": "./dist"
   },
