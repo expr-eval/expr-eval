@@ -14,10 +14,11 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-      patch-updates:
+      minor-and-patch-updates:
         applies-to: version-updates
         update-types:
           - "patch"
+          - "minor"
         patterns:
           - "*"
       vitest:
