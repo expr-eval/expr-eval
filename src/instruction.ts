@@ -28,13 +28,7 @@ export type InstructionType =
   | typeof IARRAY;
 
 export type InstructionValue =
-  | string
-  | number
-  | boolean
-  | Array<unknown>
-  | unknown
-  | null
-  | undefined;
+  string | number | boolean | Array<unknown> | unknown | null | undefined;
 
 type Primitive = string | number | boolean | null | undefined;
 
