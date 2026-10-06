@@ -30,9 +30,7 @@ import { Parser } from "./parser";
 import TokenStream from "./token-stream";
 
 type TokenMatcher =
-  | Token["value"]
-  | Token["value"][]
-  | ((token: Token) => boolean);
+  Token["value"] | Token["value"][] | ((token: Token) => boolean);
 
 type ParserStateOptions = {
   allowMemberAccess?: boolean;
