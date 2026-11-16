@@ -31,6 +31,10 @@ jobs:
       contents: write
       id-token: write
 
+    defaults:
+      run:
+        working-directory: js
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -40,9 +44,10 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: .nvmrc
+          node-version-file: js/.nvmrc
           registry-url: "https://registry.npmjs.org"
           cache: npm
+          cache-dependency-path: js/package-lock.json
 
       - run: npm ci
       - run: npm run typecheck
@@ -55,12 +60,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version + create tag
+      - name: Bump version and create tag
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
         run: |
-          npm version "${{ inputs.release_type }}" \
-            -m "chore(release): %s
-
-          [skip ci]"
+          npm version "$RELEASE_TYPE" --no-git-tag-version
+          version="$(node -p 'require("./package.json").version')"
+          git add -- package.json package-lock.json
+          git commit -m "chore(release): $version" -m "[skip ci]"
+          git tag -a "v$version" -m "chore(release): $version"
 
       - name: Push commit + tag
         if: ${{ inputs.dry_run == false }}

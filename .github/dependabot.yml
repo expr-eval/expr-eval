@@ -3,7 +3,7 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     open-pull-requests-limit: 10
-    directory: "/"
+    directory: "/js"
     schedule:
       interval: "weekly"
       day: "monday"
