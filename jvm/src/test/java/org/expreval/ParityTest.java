@@ -14,6 +14,8 @@ class ParityTest {
         test.statementsAndFunctions();
         test.symbolicOperationsAndCallable();
         test.configurationAndCallableRegistration();
+        test.jvmCallableParity();
+        test.numericCoercionAndIdentity();
     }
 
     private static void assertEquals(Object expected, Object actual) {
@@ -95,5 +97,26 @@ class ParityTest {
         assertEquals(8.0, parser.evaluate("f(4)", Map.of("f", twice)));
         assertThrows(SecurityException.class, () -> parser.evaluate("f(4)", Map.of("f", (ExpressionFunction) args -> 0)));
         assertEquals(7, parser.evaluate("x.value", Map.of("x", Map.of("value", 7))));
+    }
+
+    void jvmCallableParity() {
+        assertEquals("12", parser.parse("a + b").toFunction(List.of("a", "b")).call("1", 2));
+        assertEquals(3.0, parser.parse("(x = 2; x); x+1").toFunction().call());
+        assertEquals(true, parser.parse("(x; false) or true").toFunction("x").call(2));
+        assertEquals(Undefined.INSTANCE, parser.parse("x").toFunction("x").call());
+        assertEquals(7.0, Parser.Companion.parse("3+4").evaluate());
+    }
+
+    void numericCoercionAndIdentity() {
+        assertEquals(false, parser.evaluate("[] == []"));
+        assertEquals(false, parser.evaluate("[1] == [1]"));
+        assertEquals(true, parser.evaluate("a == a", Map.of("a", List.of(1))));
+        assertEquals(true, parser.evaluate("(0/0) in [0/0]"));
+        assertEquals(-1.0, parser.evaluate("indexOf(0/0, [0/0])"));
+        assertEquals(3, parser.evaluate("x[4294967296]", Map.of("x", new int[]{3})));
+        assertEquals(Undefined.INSTANCE, parser.evaluate("[][0]"));
+        assertEquals(0.0, parser.evaluate("sum([nil, false])", java.util.Collections.singletonMap("nil", null)));
+        assertEquals(true, parser.evaluate("'ell' in 'hello'"));
+        assertEquals(1.0, parser.evaluate("sum(['0b1'])"));
     }
 }
