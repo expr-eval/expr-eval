@@ -10,8 +10,8 @@
         let pkgs = import nixpkgs { inherit system; };
         in {
           default = pkgs.mkShell {
-            packages = [ pkgs.jdk25 pkgs.nodejs_26 pkgs.gnupg ];
-            JAVA_HOME = pkgs.jdk25.home;
+            packages = [ pkgs.jdk17 pkgs.nodejs_26 pkgs.gnupg ];
+            JAVA_HOME = pkgs.jdk17.home;
           };
         });
     };
