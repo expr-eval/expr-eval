@@ -24,7 +24,7 @@ internal class Scope(values: Map<String, Any?>) {
     }
 }
 
-internal class Evaluator(private val expression: Expression) {
+internal class Evaluator(private val expression: Expression, private val callable: Boolean = false) {
     private class Deferred(val items: List<Instruction>)
     private class Defined(val parser: Parser, val function: ExpressionFunction) : ExpressionFunction by function
 
@@ -42,6 +42,7 @@ internal class Evaluator(private val expression: Expression) {
         val stack = mutableListOf<Any?>()
         fun pop(): Any? = if (stack.isEmpty()) Undefined else stack.removeAt(stack.lastIndex)
         fun resolve(value: Any?): Any? = if (value is Deferred) run(value.items, scope) else value
+        fun leftValue(value: Any?) = if (callable) resolve(value) else value
         for (item in items) {
             val op = item.value.toString()
             val value = when (item.type) {
@@ -51,7 +52,8 @@ internal class Evaluator(private val expression: Expression) {
                     expression.functions[op]
                         ?: expression.unaryOps[op]?.takeIf { expression.parser.isOperatorEnabled(op) }
                         ?: property(scope.values, op).let {
-                            if (it === Undefined) throw IllegalArgumentException("undefined variable: $op")
+                            if (it === Undefined && !(callable && scope.values.containsKey(op)))
+                                throw IllegalArgumentException("undefined variable: $op")
                             checkValue(it, "Variable references an unallowed function: $op")
                         }
                 }
@@ -60,8 +62,8 @@ internal class Evaluator(private val expression: Expression) {
                     val right = pop()
                     val left = pop()
                     when (op) {
-                        "and" -> truth(left) && truth(resolve(right))
-                        "or" -> truth(left) || truth(resolve(right))
+                        "and" -> truth(leftValue(left)) && truth(resolve(right))
+                        "or" -> truth(leftValue(left)) || truth(resolve(right))
                         "=" -> {
                             val name = jsString(left)
                             guardName(name)
@@ -75,27 +77,42 @@ internal class Evaluator(private val expression: Expression) {
                                 }
                             })
                         }
-                        else -> expression.binaryOps.getValue(op).call(resolve(left), resolve(right))
+                        else -> {
+                            val a = resolve(left)
+                            val b = resolve(right)
+                            when {
+                                callable && op == "+" -> nativeAdd(a, b)
+                                callable && op == "in" -> hasProperty(a, b)
+                                else -> expression.binaryOps.getValue(op).call(a, b)
+                            }
+                        }
                     }
                 }
                 IOP3 -> {
                     val no = pop()
                     val yes = pop()
                     val condition = pop()
-                    if (op == "?") resolve(if (truth(condition)) yes else no)
+                    if (op == "?") resolve(if (truth(leftValue(condition))) yes else no)
                     else expression.ternaryOps.getValue(op).call(resolve(condition), resolve(yes), resolve(no))
                 }
                 IEXPR -> Deferred(item.block())
                 IEXPREVAL -> item.value
                 IMEMBER -> {
                     guardName(op)
-                    checkValue(property(pop(), op), "Is not an allowed function in MEMBER.")
+                    checkValue(property(leftValue(pop()), op), "Is not an allowed function in MEMBER.")
                 }
-                IARRAY -> List(item.value as Int) { pop() }.asReversed().toList()
+                IARRAY -> {
+                    val args = List(item.value as Int) { pop() }.asReversed()
+                    if (callable) args.map(::resolve) else ArrayList(args)
+                }
                 IFUNCALL -> {
                     val args = arrayOfNulls<Any?>(item.value as Int)
-                    for (i in args.indices.reversed()) args[i] = resolve(pop())
-                    val function = pop()
+                    for (i in args.indices.reversed()) {
+                        val arg = pop()
+                        args[i] = if (callable) arg else resolve(arg)
+                    }
+                    val function = leftValue(pop())
+                    if (callable) for (i in args.indices) args[i] = resolve(args[i])
                     if (function !is ExpressionFunction || !allowed(function))
                         throw SecurityException("Is not an allowed function.")
                     // Higher-order builtins should only dispatch callable arguments admitted by this parser.
@@ -116,7 +133,7 @@ internal class Evaluator(private val expression: Expression) {
                     function
                 }
                 IENDSTATEMENT -> {
-                    pop()
+                    leftValue(pop())
                     continue
                 }
             }
@@ -124,6 +141,6 @@ internal class Evaluator(private val expression: Expression) {
         }
         require(stack.size <= 1) { "invalid Expression (parity)" }
         val first = pop()
-        return if (first is Number && first.toDouble() == 0.0) 0.0 else resolve(first)
+        return if (!callable && first is Number && first.toDouble() == 0.0) 0.0 else resolve(first)
     }
 }

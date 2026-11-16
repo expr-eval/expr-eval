@@ -30,6 +30,7 @@ internal fun truth(a: Any?): Boolean = when (a) {
 
 internal fun jsString(a: Any?): String = when (a) {
     null -> "null"
+    Undefined -> "undefined"
     is String -> a
     is Boolean -> a.toString()
     is Number -> {
@@ -74,6 +75,20 @@ internal fun number(a: Any?): Double = when (a) {
 
 private fun stringPrimitive(x: Any?): Any? =
     if (x == null || x === Undefined || x is String || x is Boolean || x is Number) x else jsString(x)
+
+internal fun nativeAdd(a: Any?, b: Any?): Any? {
+    val left = stringPrimitive(a)
+    val right = stringPrimitive(b)
+    return if (left is String || right is String) jsString(left) + jsString(right) else number(left) + number(right)
+}
+
+internal fun hasProperty(key: Any?, receiver: Any?): Boolean {
+    val name = jsString(key)
+    if (receiver is Map<*, *>) return receiver.containsKey(name)
+    val list = array(receiver) ?: throw IllegalArgumentException("Right operand of in must be an object")
+    if (name == "length") return true
+    return name.toIntOrNull()?.let { it.toString() == name && it in list.indices } ?: false
+}
 
 private fun relation(a: Any?, b: Any?, string: (Int) -> Boolean, numeric: (Double, Double) -> Boolean): Boolean {
     val left = stringPrimitive(a)

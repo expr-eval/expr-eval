@@ -67,17 +67,22 @@ class Expression(val tokens: List<Instruction>, val parser: Parser) {
 
     /**
      * JVM counterpart of toJSFunction: bind positional parameters and return a reusable callable.
-     * The callable evaluates simplified instructions using the parser's normal function policy.
+     * The callable uses simplified instructions and the parser's normal function policy.
      */
     @JvmOverloads
-    fun toFunction(parameters: String = "", values: Map<String, Any?> = emptyMap()): ExpressionFunction {
-        val names = if (parameters.isBlank()) emptyList() else parameters.split(',').map(String::trim)
+    fun toFunction(parameters: String = "", values: Map<String, Any?> = emptyMap()): ExpressionFunction =
+        toFunction(if (parameters.isBlank()) emptyList() else parameters.split(',').map(String::trim), values)
+
+    @JvmOverloads
+    fun toFunction(parameters: List<String>, values: Map<String, Any?> = emptyMap()): ExpressionFunction {
+        val names = parameters.toList()
         require(names.all { parameter.matches(it) }) { "Invalid parameter list: $parameters" }
         val simplified = simplify(values)
+        val program = callableProgram(simplified.tokens)
         return fn { args ->
             val scope = linkedMapOf<String, Any?>()
             names.forEachIndexed { index, name -> scope[name] = args.arg(index) }
-            simplified.evaluate(scope)
+            Evaluator(simplified, callable = true).run(program, Scope(scope))
         }
     }
 

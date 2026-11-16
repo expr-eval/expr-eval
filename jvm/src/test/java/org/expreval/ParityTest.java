@@ -1,42 +1,15 @@
 package org.expreval;
 
-import java.util.Objects;
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ParityTest {
-    public static void main(String[] args) {
-        ParityTest test = new ParityTest();
-        test.literalsAndPrecedence();
-        test.shortCircuitAndStrictEquality();
-        test.arraysStringsAndBuiltins();
-        test.statementsAndFunctions();
-        test.symbolicOperationsAndCallable();
-        test.configurationAndCallableRegistration();
-        test.jvmCallableParity();
-        test.numericCoercionAndIdentity();
-    }
-
-    private static void assertEquals(Object expected, Object actual) {
-        if (!Objects.equals(expected, actual)) {
-            throw new AssertionError("Expected " + expected + " but got " + actual);
-        }
-    }
-
-    private static void assertThrows(Class<? extends Exception> type, Runnable action, String... context) {
-        try {
-            action.run();
-        } catch (Exception e) {
-            if (type.isInstance(e)) return;
-            throw new AssertionError("Unexpected exception for " + String.join(", ", context), e);
-        }
-        throw new AssertionError("Expected " + type.getSimpleName() + " for " + String.join(", ", context));
-    }
-
     private final Parser parser = new Parser();
 
-    void literalsAndPrecedence() {
+    @Test void literalsAndPrecedence() {
         assertEquals(24.5, parser.evaluate("0x10 + 0b10 + .5e1 + 1.5 /* comment */"));
         assertEquals(-512.0, parser.evaluate("-2^3^2"));
         assertEquals(0.0625, parser.evaluate("2^-4"));
@@ -45,7 +18,7 @@ class ParityTest {
         assertEquals("a\nb", parser.evaluate("'a\\nb'"));
     }
 
-    void shortCircuitAndStrictEquality() {
+    @Test void shortCircuitAndStrictEquality() {
         assertEquals(true, parser.evaluate("true or missing"));
         assertEquals(false, parser.evaluate("false and missing"));
         assertEquals(3.0, parser.evaluate("false ? missing : 3"));
@@ -54,7 +27,7 @@ class ParityTest {
         assertThrows(IllegalArgumentException.class, () -> parser.evaluate("if(true, 3, missing)"));
     }
 
-    void arraysStringsAndBuiltins() {
+    @Test void arraysStringsAndBuiltins() {
         assertEquals(List.of(1.0, 2.0, List.of(3.0)), parser.evaluate("[1] || [2,[3]]"));
         assertEquals("b", parser.evaluate("'abc'[1.9]"));
         assertEquals(true, parser.evaluate("2 in [1,2]"));
@@ -65,7 +38,7 @@ class ParityTest {
         assertEquals(List.of(2.0, 3.0), parser.evaluate("f(x)=x>1; filter(f,[1,2,3])"));
     }
 
-    void statementsAndFunctions() {
+    @Test void statementsAndFunctions() {
         Map<String, Object> values = new HashMap<>();
         assertEquals(15.0, parser.evaluate("y=5; (f(x)=x*y)(3)", values));
         assertEquals(5.0, values.get("y"));
@@ -74,7 +47,7 @@ class ParityTest {
         assertEquals(17.0, parser.evaluate("2+(x=3;y=4;z=x*y)+3"));
     }
 
-    void symbolicOperationsAndCallable() {
+    @Test void symbolicOperationsAndCallable() {
         Expression expr = parser.parse("max(conf.min, conf.max) + x^2");
         assertEquals(List.of("max", "conf", "x"), expr.symbols());
         assertEquals(List.of("conf.min", "conf.max", "x"), expr.variables(new SymbolOptions(true)));
@@ -86,7 +59,7 @@ class ParityTest {
         assertEquals(3, parser.parse("1+2").getTokens().size());
     }
 
-    void configurationAndCallableRegistration() {
+    @Test void configurationAndCallableRegistration() {
         Parser configured = new Parser(new ParserOptions(false, Map.of("multiply", false, "fndef", false)));
         for (String input : List.of("2*3", "x.y", "f(x)=x", "5/", "0b2", "'bad\\q'")) {
             assertThrows(IllegalArgumentException.class, () -> configured.parse(input), input);
@@ -99,15 +72,19 @@ class ParityTest {
         assertEquals(7, parser.evaluate("x.value", Map.of("x", Map.of("value", 7))));
     }
 
-    void jvmCallableParity() {
+    @Test void jvmCallableParity() {
         assertEquals("12", parser.parse("a + b").toFunction(List.of("a", "b")).call("1", 2));
         assertEquals(3.0, parser.parse("(x = 2; x); x+1").toFunction().call());
+        assertEquals(4.0, parser.parse("(x = 2; x) + x").toFunction().call());
+        assertEquals(List.of(2.0, 2.0), parser.parse("[(x=2; x), x]").toFunction().call());
+        assertEquals(2.0, parser.parse("min((x=2; x), x)").toFunction().call());
+        assertEquals(6.0, parser.parse("(f(x) = g(y) = x*y)(a)(b)").toFunction("a,b").call(2, 3));
         assertEquals(true, parser.parse("(x; false) or true").toFunction("x").call(2));
         assertEquals(Undefined.INSTANCE, parser.parse("x").toFunction("x").call());
         assertEquals(7.0, Parser.Companion.parse("3+4").evaluate());
     }
 
-    void numericCoercionAndIdentity() {
+    @Test void numericCoercionAndIdentity() {
         assertEquals(false, parser.evaluate("[] == []"));
         assertEquals(false, parser.evaluate("[1] == [1]"));
         assertEquals(true, parser.evaluate("a == a", Map.of("a", List.of(1))));
