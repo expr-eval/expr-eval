@@ -13,6 +13,9 @@ package org.expreval
 /** A function available to expressions, with a Java-compatible vararg signature. */
 fun interface ExpressionFunction {
     fun call(vararg args: Any?): Any?
+
+    /** Invokes this function with a JavaScript-style receiver; ordinary lambdas ignore it. */
+    fun callWithReceiver(receiver: Any?, vararg args: Any?): Any? = call(*args)
 }
 
 data class ParserOptions

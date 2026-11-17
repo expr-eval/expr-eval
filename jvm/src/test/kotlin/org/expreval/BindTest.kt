@@ -5,6 +5,29 @@ import org.junit.jupiter.api.Test
 
 class BindTest {
     @Test
+    fun `shared JavaScript reference cases`() {
+        val cases = requireNotNull(javaClass.getResourceAsStream("/bind.tsv"))
+            .bufferedReader().use { it.readLines() }
+        for (line in cases) {
+            val (mode, input, type, expected) = line.split('\t')
+            val expression = Parser().parse(input)
+            val run = { if (mode == "evaluate") expression.evaluate() else expression.toFunction().call() }
+            if (type == "error") {
+                assertEquals(expected, assertThrows(RuntimeException::class.java) { run() }.message, line)
+            } else {
+                val actual = run()
+                when (type) {
+                    "function" -> assertInstanceOf(ExpressionFunction::class.java, actual, line)
+                    "number" -> assertEquals(expected.toDouble(), actual, line)
+                    "boolean" -> assertEquals(expected.toBooleanStrict(), actual, line)
+                    "array" -> assertEquals(expected.split(',').map(String::toDouble), actual, line)
+                    else -> assertEquals(expected, actual, line)
+                }
+            }
+        }
+    }
+
+    @Test
     fun `bind is a shared function property rather than undefined`() {
         val parser = Parser()
         val bind = parser.evaluate("min.bind")
@@ -14,6 +37,7 @@ class BindTest {
         assertEquals(true, parser.evaluate("min.bind == max.bind"))
         assertTrue((parser.evaluate("32 + min.bind") as Double).isNaN())
         assertSame(bind, parser.parse("min.bind").toFunction().call())
+        assertEquals("32function bind() { [native code] }", parser.parse("32 + min.bind").toFunction().call())
     }
 
     @Test

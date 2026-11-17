@@ -82,6 +82,10 @@ internal fun jsString(a: Any?): String =
             }
         }
 
+        FunctionBind -> {
+            "function bind() { [native code] }"
+        }
+
         is ExpressionFunction -> {
             "function"
         }
@@ -288,6 +292,7 @@ internal fun property(
     name: String,
 ): Any? {
     if (value == null || value === Undefined) throw IllegalArgumentException("Cannot read property $name of $value")
+    if (value is ExpressionFunction && name == "bind") return FunctionBind
     if (value is Map<*, *>) return if (value.containsKey(name)) value[name] else Undefined
     val array = array(value)
     if (name == "length") {

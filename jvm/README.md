@@ -42,6 +42,22 @@ optional simplification bindings. It follows the callable form of the language (
 generate JavaScript or access JavaScript globals. For the default parser in
 Java, use `Parser.Companion.parse(...)` or create a `Parser` instance.
 
+Function values expose a shared `bind` property, matching JavaScript's
+`Function.prototype.bind`. The interpreted evaluator allows reading that
+property but rejects invoking it unless it is registered, just like the
+JavaScript evaluator. JVM callables preserve the receiver for binding:
+
+```kotlin
+val powerOfTwo = Parser.parse("pow.bind(0, 2)").toFunction().call() as ExpressionFunction
+val eight = powerOfTwo.call(3) // 8.0
+```
+
+Binding prepends arguments and retains the first bound receiver when rebound.
+Ordinary `ExpressionFunction` lambdas ignore the receiver. Host functions that
+need JavaScript-style `this` can override `callWithReceiver`; calling a detached
+`bind` without a function receiver throws `IllegalArgumentException`.
+The usual function allowlist and member-access controls still apply.
+
 The project targets Java 17. For local Maven consumption, run
 `./gradlew :jvm:publishToMavenLocal`, then use
 `io.github.expr-eval:expr-eval:3.8.1-SNAPSHOT`.

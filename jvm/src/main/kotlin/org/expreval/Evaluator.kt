@@ -43,8 +43,15 @@ internal class Evaluator(
         val function: ExpressionFunction,
     ) : ExpressionFunction by function
 
+    private class FunctionReference(
+        val receiver: ExpressionFunction,
+        val function: ExpressionFunction,
+    )
+
     private fun allowed(value: ExpressionFunction): Boolean =
-        (value is Defined && value.parser === expression.parser) ||
+        (callable && value === FunctionBind) ||
+            (callable && value is BoundFunction && allowed(value.target)) ||
+            (value is Defined && value.parser === expression.parser) ||
             sequenceOf(expression.functions, expression.unaryOps, expression.binaryOps, expression.ternaryOps)
                 .any { map -> map.values.any { it === value } }
 
@@ -59,12 +66,19 @@ internal class Evaluator(
     fun run(
         items: List<Instruction>,
         scope: Scope,
+        preserveReference: Boolean = false,
     ): Any? {
         val stack = mutableListOf<Any?>()
 
         fun pop(): Any? = if (stack.isEmpty()) Undefined else stack.removeAt(stack.lastIndex)
 
-        fun resolve(value: Any?): Any? = if (value is Deferred) run(value.items, scope) else value
+        fun resolveReference(value: Any?): Any? = if (value is Deferred) run(value.items, scope, true) else value
+
+        fun resolve(value: Any?): Any? =
+            when (val resolved = resolveReference(value)) {
+                is FunctionReference -> resolved.function
+                else -> resolved
+            }
 
         fun leftValue(value: Any?) = if (callable) resolve(value) else value
         for (item in items) {
@@ -157,7 +171,14 @@ internal class Evaluator(
 
                     IMEMBER -> {
                         guardName(op)
-                        checkValue(property(leftValue(pop()), op), "Is not an allowed function in MEMBER.")
+                        val receiver = leftValue(pop())
+                        val member = property(receiver, op)
+                        if (receiver is ExpressionFunction) {
+                            // The reference evaluator exposes function properties without admitting calls.
+                            if (callable && member === FunctionBind) FunctionReference(receiver, member) else member
+                        } else {
+                            checkValue(member, "Is not an allowed function in MEMBER.")
+                        }
                     }
 
                     IARRAY -> {
@@ -171,14 +192,19 @@ internal class Evaluator(
                             val arg = pop()
                             args[i] = if (callable) arg else resolve(arg)
                         }
-                        val function = leftValue(pop())
+                        val callee = if (callable) resolveReference(pop()) else pop()
                         if (callable) for (i in args.indices) args[i] = resolve(args[i])
-                        if (function !is ExpressionFunction || !allowed(function)) {
+                        val reference = callee as? FunctionReference
+                        val function = reference?.function ?: callee
+                        val bindCall =
+                            callable && function === FunctionBind && reference != null &&
+                                allowed(reference.receiver)
+                        if (function !is ExpressionFunction || (!bindCall && !allowed(function))) {
                             throw SecurityException("Is not an allowed function.")
                         }
                         // Higher-order builtins should only dispatch callable arguments admitted by this parser.
                         args.forEach { checkValue(it, "Is not an allowed function.") }
-                        function.call(*args)
+                        if (bindCall) function.callWithReceiver(reference.receiver, *args) else function.call(*args)
                     }
 
                     IFUNDEF -> {
@@ -208,6 +234,11 @@ internal class Evaluator(
         }
         require(stack.size <= 1) { "invalid Expression (parity)" }
         val first = pop()
-        return if (!callable && first is Number && first.toDouble() == 0.0) 0.0 else resolve(first)
+        return when {
+            // Parentheses preserve a method receiver; a statement sequence produces a detached value.
+            preserveReference && items.none { it.type == IENDSTATEMENT } -> resolveReference(first)
+            !callable && first is Number && first.toDouble() == 0.0 -> 0.0
+            else -> resolve(first)
+        }
     }
 }

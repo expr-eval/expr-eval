@@ -28,6 +28,10 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.14.1")
 }
 
+sourceSets.test {
+    resources.srcDir(rootProject.file("parity"))
+}
+
 tasks.test { useJUnitPlatform() }
 
 val docsJar by tasks.registering(Jar::class) {
