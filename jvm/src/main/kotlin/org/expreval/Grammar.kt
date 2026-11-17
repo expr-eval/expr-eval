@@ -3,21 +3,32 @@ package org.expreval
 import org.expreval.InstructionType.*
 
 private enum class Kind { END, OP, LITERAL, STRING, PAREN, BRACKET, COMMA, NAME, SEMICOLON }
-private data class Token(val kind: Kind, val value: Any?) {
+
+private data class Token(
+    val kind: Kind,
+    val value: Any?,
+) {
     val text get() = value.toString()
-    override fun toString() = "T${when (kind) {
-        Kind.END -> "EOF"
-        Kind.LITERAL -> "NUMBER"
-        else -> kind.name
-    }}: $text"
+
+    override fun toString() =
+        "T${when (kind) {
+            Kind.END -> "EOF"
+            Kind.LITERAL -> "NUMBER"
+            else -> kind.name
+        }}: $text"
 }
 
-private class Lexer(val parser: Parser, val source: String) {
+private class Lexer(
+    val parser: Parser,
+    val source: String,
+) {
     var pos = 0
     private val number = Regex("""(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?""")
     private val hex = Regex("0x[0-9a-fA-F]+")
     private val bin = Regex("0b[01]+")
+
     private fun Char.cased() = uppercase() != lowercase()
+
     private fun Char.tail() = this == '_' || this in '0'..'9'
 
     fun error(message: String): Nothing {
@@ -29,15 +40,22 @@ private class Lexer(val parser: Parser, val source: String) {
 
     fun next(): Token {
         while (pos < source.length) {
-            if (source[pos] in " \t\r\n") pos++
-            else if (source.startsWith("/*", pos)) {
+            if (source[pos] in " \t\r\n") {
+                pos++
+            } else if (source.startsWith("/*", pos)) {
                 val end = source.indexOf("*/", pos)
                 pos = if (end < 0) source.length else end + 2
-            } else break
+            } else {
+                break
+            }
         }
         if (pos == source.length) return Token(Kind.END, "EOF")
 
-        fun take(kind: Kind, size: Int, value: Any?): Token {
+        fun take(
+            kind: Kind,
+            size: Int,
+            value: Any?,
+        ): Token {
             pos += size
             return Token(kind, value)
         }
@@ -45,18 +63,28 @@ private class Lexer(val parser: Parser, val source: String) {
         if (c in "0123456789.") {
             val radix = if (source.startsWith("0x", pos)) 16 else 2
             val match = (if (radix == 16) hex else bin).matchAt(source, pos)
-            if (match != null) return take(Kind.LITERAL, match.value.length, match.value.drop(2).toBigInteger(radix).toDouble())
+            if (match != null) {
+                return take(
+                    Kind.LITERAL,
+                    match.value.length,
+                    match.value
+                        .drop(2)
+                        .toBigInteger(radix)
+                        .toDouble(),
+                )
+            }
             number.matchAt(source, pos)?.value?.let {
                 return take(Kind.LITERAL, it.length, it.toDouble())
             }
         }
         val pair = source.substring(pos, minOf(pos + 2, source.length))
-        val op = when {
-            pair in pairs -> pair
-            c in "+-*/%^?:.><=!" -> c.toString()
-            c == '∙' || c == '•' -> "*"
-            else -> null
-        }
+        val op =
+            when {
+                pair in pairs -> pair
+                c in "+-*/%^?:.><=!" -> c.toString()
+                c == '∙' || c == '•' -> "*"
+                else -> null
+            }
         if (op != null && parser.isOperatorEnabled(op)) return take(Kind.OP, op.length, op)
         if (c == '\'' || c == '"') return quoted(c)
         if (c in "()") return take(Kind.PAREN, 1, c.toString())
@@ -69,7 +97,9 @@ private class Lexer(val parser: Parser, val source: String) {
             val name = source.substring(pos, end)
             if (parser.isOperatorEnabled(name) &&
                 (name in parser.unaryOps || name in parser.binaryOps || name in parser.ternaryOps)
-            ) return take(Kind.OP, name.length, name)
+            ) {
+                return take(Kind.OP, name.length, name)
+            }
             while (end < source.length && (source[end].cased() || source[end].tail() || source[end] == '.')) end++
             val constant = source.substring(pos, end)
             if (parser.consts.containsKey(constant)) return take(Kind.LITERAL, constant.length, parser.consts[constant])
@@ -90,31 +120,53 @@ private class Lexer(val parser: Parser, val source: String) {
         if (end < 0) error("Unknown character \"$quote\"")
         pos = end + 1
         val raw = source.substring(start + 1, end)
-        val value = buildString {
-            var i = 0
-            while (i < raw.length) {
-                val c = raw[i++]
-                if (c != '\\') {
-                    append(c)
-                    continue
-                }
-                when (val escaped = raw.getOrNull(i++)) {
-                    '\'', '"', '\\', '/' -> append(escaped)
-                    'b' -> append('\b')
-                    'f' -> append('\u000c')
-                    'n' -> append('\n')
-                    'r' -> append('\r')
-                    't' -> append('\t')
-                    'u' -> {
-                        val digits = raw.substring(i, minOf(i + 4, raw.length))
-                        if (!unicode.matches(digits)) error("Illegal escape sequence: \\u$digits")
-                        append(digits.toInt(16).toChar())
-                        i += 4
+        val value =
+            buildString {
+                var i = 0
+                while (i < raw.length) {
+                    val c = raw[i++]
+                    if (c != '\\') {
+                        append(c)
+                        continue
                     }
-                    else -> error("Illegal escape sequence: \"\\${escaped ?: ""}\"")
+                    when (val escaped = raw.getOrNull(i++)) {
+                        '\'', '"', '\\', '/' -> {
+                            append(escaped)
+                        }
+
+                        'b' -> {
+                            append('\b')
+                        }
+
+                        'f' -> {
+                            append('\u000c')
+                        }
+
+                        'n' -> {
+                            append('\n')
+                        }
+
+                        'r' -> {
+                            append('\r')
+                        }
+
+                        't' -> {
+                            append('\t')
+                        }
+
+                        'u' -> {
+                            val digits = raw.substring(i, minOf(i + 4, raw.length))
+                            if (!unicode.matches(digits)) error("Illegal escape sequence: \\u$digits")
+                            append(digits.toInt(16).toChar())
+                            i += 4
+                        }
+
+                        else -> {
+                            error("Illegal escape sequence: \"\\${escaped ?: ""}\"")
+                        }
+                    }
                 }
             }
-        }
         return Token(Kind.STRING, value)
     }
 
@@ -124,23 +176,37 @@ private class Lexer(val parser: Parser, val source: String) {
     }
 }
 
-internal class Grammar(private val parser: Parser, source: String) {
+internal class Grammar(
+    private val parser: Parser,
+    source: String,
+) {
     private val lexer = Lexer(parser, source)
     private var next = lexer.next()
 
-    fun parse(): List<Instruction> = buildList {
-        expression(this)
-        expect(Kind.END, "EOF")
-    }
+    fun parse(): List<Instruction> =
+        buildList {
+            expression(this)
+            expect(Kind.END, "EOF")
+        }
 
     private fun consume() = next.also { next = lexer.next() }
-    private fun accept(kind: Kind, name: String) = (next.kind == kind && next.value == name).also {
+
+    private fun accept(
+        kind: Kind,
+        name: String,
+    ) = (next.kind == kind && next.value == name).also {
         if (it) consume()
     }
-    private fun expect(kind: Kind, name: String): Unit {
+
+    private fun expect(
+        kind: Kind,
+        name: String,
+    ) {
         if (!accept(kind, name)) lexer.error("Expected $name")
     }
+
     private fun acceptOp(name: String) = accept(Kind.OP, name)
+
     private fun prefix() = next.kind == Kind.OP && next.text in parser.unaryOps
 
     private fun expression(out: MutableList<Instruction>) {
@@ -175,12 +241,16 @@ internal class Grammar(private val parser: Parser, source: String) {
                     out.add(block(::assignment))
                     out.add(Instruction(IFUNDEF, count))
                 }
+
                 IVAR, IMEMBER -> {
                     out.add(lhs.copy(type = IVARNAME))
                     out.add(block(::assignment))
                     out.add(Instruction(IOP2, "="))
                 }
-                else -> throw IllegalArgumentException("expected variable for assignment")
+
+                else -> {
+                    throw IllegalArgumentException("expected variable for assignment")
+                }
             }
         }
     }
@@ -213,7 +283,11 @@ internal class Grammar(private val parser: Parser, source: String) {
         }
     }
 
-    private fun binary(out: MutableList<Instruction>, ops: Set<String>, parse: (MutableList<Instruction>) -> Unit) {
+    private fun binary(
+        out: MutableList<Instruction>,
+        ops: Set<String>,
+        parse: (MutableList<Instruction>) -> Unit,
+    ) {
         parse(out)
         while (next.kind == Kind.OP && next.text in ops) {
             val op = consume().text
@@ -223,7 +297,9 @@ internal class Grammar(private val parser: Parser, source: String) {
     }
 
     private fun comparison(out: MutableList<Instruction>) = binary(out, comparisons, ::additive)
+
     private fun additive(out: MutableList<Instruction>) = binary(out, additions, ::term)
+
     private fun term(out: MutableList<Instruction>) = binary(out, products, ::factor)
 
     private fun factor(out: MutableList<Instruction>) {
@@ -245,7 +321,9 @@ internal class Grammar(private val parser: Parser, source: String) {
             }
             factor(out)
             out.add(Instruction(IOP1, op))
-        } else power(out)
+        } else {
+            power(out)
+        }
     }
 
     private fun power(out: MutableList<Instruction>) {
@@ -274,25 +352,43 @@ internal class Grammar(private val parser: Parser, source: String) {
                 expression(out)
                 expect(Kind.BRACKET, "]")
                 out.add(Instruction(IOP2, "["))
-            } else break
+            } else {
+                break
+            }
         }
         while (accept(Kind.PAREN, "(")) out.add(Instruction(IFUNCALL, list(out, Kind.PAREN, ")")))
     }
 
     private fun atom(out: MutableList<Instruction>) {
         when {
-            next.kind == Kind.NAME || prefix() -> out.add(Instruction(IVAR, consume().value))
-            next.kind == Kind.LITERAL || next.kind == Kind.STRING -> out.add(Instruction(INUMBER, consume().value))
+            next.kind == Kind.NAME || prefix() -> {
+                out.add(Instruction(IVAR, consume().value))
+            }
+
+            next.kind == Kind.LITERAL || next.kind == Kind.STRING -> {
+                out.add(Instruction(INUMBER, consume().value))
+            }
+
             accept(Kind.PAREN, "(") -> {
                 expression(out)
                 expect(Kind.PAREN, ")")
             }
-            accept(Kind.BRACKET, "[") -> out.add(Instruction(IARRAY, list(out, Kind.BRACKET, "]")))
-            else -> throw IllegalArgumentException("unexpected $next")
+
+            accept(Kind.BRACKET, "[") -> {
+                out.add(Instruction(IARRAY, list(out, Kind.BRACKET, "]")))
+            }
+
+            else -> {
+                throw IllegalArgumentException("unexpected $next")
+            }
         }
     }
 
-    private fun list(out: MutableList<Instruction>, kind: Kind, end: String): Int {
+    private fun list(
+        out: MutableList<Instruction>,
+        kind: Kind,
+        end: String,
+    ): Int {
         var count = 0
         while (!accept(kind, end)) {
             do {
