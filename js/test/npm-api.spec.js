@@ -65,13 +65,56 @@ describe("npm consumer API", () => {
     assert.equal(parser.evaluate("a[0]", values), 7);
   });
 
-  it("uses live caller scopes and function registries", () => {
+  it("isolates registry edits from existing, future and static parsers", () => {
     const parser = new Parser();
+    const existing = new Parser();
+    const registries = [
+      "unaryOps",
+      "binaryOps",
+      "ternaryOps",
+      "functions",
+      "consts",
+    ];
+    for (const name of registries) {
+      assert.notEqual(parser[name], existing[name], name);
+    }
+    parser.consts.PI = 4;
+    delete parser.functions.fac;
+    parser.binaryOps["+"] = () => 42;
+    assert.equal(parser.evaluate("PI"), 4);
+    assert.equal(parser.evaluate("1+1"), 42);
+    for (const other of [existing, new Parser(), Parser]) {
+      assert.equal(other.evaluate("PI"), Math.PI);
+      assert.equal(other.evaluate("fac(3) + 1"), 7);
+    }
+  });
+
+  it("keeps definitions callable in their scope without growing the registry", () => {
+    const parser = new Parser();
+    const entries = Object.keys(parser.functions);
+    const scope = {};
+    for (let i = 0; i < 3; i++) {
+      parser.evaluate("f(x)=x+1", scope);
+      assert.equal(parser.evaluate("f(2)", scope), 3);
+    }
+    assert.deepEqual(Object.keys(parser.functions), entries);
+  });
+
+  it("requires registration to use a scope's function on a different parser", () => {
+    const parser = new Parser();
+    const other = new Parser();
     const scope = { factor: 3 };
     const f = parser.evaluate("f(x)=x*factor", scope);
     scope.factor = 4;
     assert.equal(f(3), 12);
-    assert.equal(new Parser().evaluate("f(2)", scope), 8);
+    assert.equal(parser.evaluate("f(2)", scope), 8);
+    assert.throws(() => other.evaluate("f(2)", scope), /unallowed function/);
+    other.functions.f = f;
+    assert.equal(other.evaluate("f(2)"), 8);
+  });
+
+  it("uses the parser's current function registry for parsed expressions", () => {
+    const parser = new Parser();
     const expr = parser.parse("custom(2)");
     parser.functions = { custom: (x) => x * 3 };
     assert.equal(expr.evaluate(), 6);
