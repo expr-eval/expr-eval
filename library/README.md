@@ -38,8 +38,9 @@ Object result = parser.evaluate("twice(21)"); // 42.0
 
 The JVM counterpart of JavaScript's `toJSFunction` is `toFunction`. It
 creates an `ExpressionFunction` from a comma-separated parameter string or list of parameter names and
-optional simplification bindings. It follows the callable form of the language (for example, string addition) and does not
-generate JavaScript or access JavaScript globals. For the default parser in
+optional simplification bindings. Both `evaluate` and `toFunction` use numeric
+addition by default. For example, `x + 1` with `x` set to `"2"` returns `3.0`.
+Use `||` for string concatenation. The callable runs on the JVM. For the default parser in
 Java, use `Parser.Companion.parse(...)` or create a `Parser` instance.
 
 Function values expose a shared `bind` property, matching JavaScript's

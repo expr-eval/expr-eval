@@ -126,9 +126,22 @@ class JsExpression(var tokens: dynamic, var parser: JsParser) {
     fun symbols(options: dynamic = null): Array<String> = core().symbols(SymbolOptions(options?.withMembers == true)).toTypedArray()
     fun variables(options: dynamic = null): Array<String> = core().variables(SymbolOptions(options?.withMembers == true)).toTypedArray()
     fun toJSFunction(param: dynamic = "", variables: dynamic = null): dynamic {
-        val code = render(core().simplify(scopeMap(variables)).tokens, javascript = true)
+        val expression = core().simplify(scopeMap(variables))
+        // Public Instruction objects can contain any JavaScript identifier.
+        val symbols = expression.symbols()
+        var addName = "exprEval\$add"
+        while (addName in symbols) addName += '$'
+        val code = render(expression.tokens, javascriptAdd = addName)
         // Preserve the npm API's native Function calling convention and live registry lookup.
-        val body = "with(this.functions) with(this.ternaryOps) with(this.binaryOps) with(this.unaryOps) { return $code; }"
+        val body = """
+            with(this.functions) with(this.ternaryOps) with(this.binaryOps) with(this.unaryOps) {
+                const $addName = (left, right) => {
+                    const add = this.binaryOps['+'];
+                    return add(left, right);
+                };
+                return $code;
+            }
+        """.trimIndent()
         val compiled = js("new Function(param, body)")
         val receiver = this
         return js("(...args) => compiled.apply(receiver, args)")

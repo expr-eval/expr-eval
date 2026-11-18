@@ -133,10 +133,10 @@ internal class Evaluator(
                             else -> {
                                 val a = resolve(left)
                                 val b = resolve(right)
-                                when {
-                                    callable && op == "+" -> nativeAdd(a, b)
-                                    callable && op == "in" -> hasProperty(a, b)
-                                    else -> expression.binaryOps.getValue(op).call(a, b)
+                                if (callable && op == "in") {
+                                    hasProperty(a, b)
+                                } else {
+                                    expression.binaryOps.getValue(op).call(a, b)
                                 }
                             }
                         }

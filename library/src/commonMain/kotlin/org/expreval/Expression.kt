@@ -184,7 +184,8 @@ class Expression(
 @Suppress("UNCHECKED_CAST")
 internal fun Instruction.block() = value as List<Instruction>
 
-internal fun render(items: List<Instruction>, javascript: Boolean = false): String {
+internal fun render(items: List<Instruction>, javascriptAdd: String? = null): String {
+    val javascript = javascriptAdd != null
     val stack = mutableListOf<String>()
 
     fun pop() = if (stack.isEmpty()) "undefined" else stack.removeAt(stack.lastIndex)
@@ -217,6 +218,7 @@ internal fun render(items: List<Instruction>, javascript: Boolean = false): Stri
                     val left = pop()
                     if (javascript) {
                         when (op) {
+                            "+" -> "$javascriptAdd($left, $right)"
                             "^" -> "Math.pow($left, $right)"
                             "and" -> "(!!$left && !!$right)"
                             "or" -> "(!!$left || !!$right)"
@@ -257,7 +259,7 @@ internal fun render(items: List<Instruction>, javascript: Boolean = false): Stri
                 }
 
                 IEXPR -> {
-                    "(${render(item.block(), javascript)})"
+                    "(${render(item.block(), javascriptAdd)})"
                 }
 
                 IENDSTATEMENT -> {

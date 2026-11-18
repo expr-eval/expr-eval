@@ -55,6 +55,18 @@ describe("npm consumer API", () => {
     assert.deepEqual(compiled("2", 1), ["2", 1]);
   });
 
+  it("keeps variable names from public instructions available in compiled addition", () => {
+    const variable = "exprEval$add";
+    const tokens = [
+      new Instruction("IVAR", variable),
+      new Instruction("INUMBER", 1),
+      new Instruction("IOP2", "+"),
+    ];
+    const expr = new Expression(tokens, new Parser());
+    assert.equal(expr.evaluate({ [variable]: "2" }), 3);
+    assert.equal(expr.toJSFunction(variable)("2"), 3);
+  });
+
   it("preserves built-in aliases and their public arities", () => {
     const parser = new Parser();
     assert.equal(parser.functions.fac, parser.unaryOps["!"]);

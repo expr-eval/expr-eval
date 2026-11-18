@@ -213,15 +213,19 @@ is an array of parameter names, or a string, with the names separated by commas.
 If the optional `variables` argument is provided, the expression will be
 simplified with variables bound to the supplied values.
 
+Both `evaluate()` and `toJSFunction()` use numeric addition by default.
+For example, `x + 1` gives `3` when `x` is `"2"`. To concatenate text,
+use `x || 1`, which gives `"21"` for the same input.
+
 ```js
     js> expr = Parser.parse("x + y + z");
     ((x + y) + z)
     js> f = expr.toJSFunction("x,y,z");
-    [Function] // function (x, y, z) { return x + y + z; };
+    [Function]
     js> f(1, 2, 3)
     6
     js> f = expr.toJSFunction("y,z", { x: 100 });
-    [Function] // function (y, z) { return 100 + y + z; };
+    [Function]
     js> f(2, 3)
     105
 ```
@@ -242,7 +246,7 @@ exponentiation, not xor.
 | ^                        | Right         | Exponentiation                                                                                 |
 | +, -, not, sqrt, etc.    | Right         | Unary prefix operators (see below for the full list)                                           |
 | \*, /, %                 | Left          | Multiplication, division, remainder                                                            |
-| +, -, \|\|               | Left          | Addition, subtraction, array/list concatenation                                                |
+| +, -, \|\|               | Left          | Numeric addition, subtraction, string or array concatenation                                  |
 | ==, !=, >=, <=, >, <, in | Left          | Equals, not equals, etc. "in" means "is the left operand included in the right array operand?" |
 | and                      | Left          | Logical AND                                                                                    |
 | or                       | Left          | Logical OR                                                                                     |

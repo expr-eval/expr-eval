@@ -114,15 +114,6 @@ internal fun number(a: Any?): Double =
 private fun stringPrimitive(x: Any?): Any? =
     if (x == null || x === Undefined || x is String || x is Boolean || x is Number) x else jsString(x)
 
-internal fun nativeAdd(
-    a: Any?,
-    b: Any?,
-): Any? {
-    val left = stringPrimitive(a)
-    val right = stringPrimitive(b)
-    return if (left is String || right is String) jsString(left) + jsString(right) else number(left) + number(right)
-}
-
 internal fun hasProperty(
     key: Any?,
     receiver: Any?,
