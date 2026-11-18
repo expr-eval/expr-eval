@@ -29,6 +29,29 @@ describe("npm consumer API", () => {
     assert.throws(() => new fn(2, 3), TypeError);
   });
 
+  it("preserves built-in aliases and their public arities", () => {
+    const parser = new Parser();
+    assert.equal(parser.functions.fac, parser.unaryOps["!"]);
+    assert.equal(parser.functions.if, parser.ternaryOps["?"]);
+    assert.equal(parser.functions.pyt, Math.hypot);
+    assert.equal(parser.functions.map.length, 2);
+    assert.equal(parser.functions.fold.length, 3);
+    assert.equal(parser.binaryOps["="].length, 3);
+    assert.equal(parser.unaryOps.length.length, 1);
+  });
+
+  it("uses the JavaScript random source for each draw", () => {
+    const original = Math.random;
+    try {
+      Math.random = () => 0.25;
+      assert.equal(Parser.evaluate("random(8)"), 2);
+      Math.random = () => 0.5;
+      assert.equal(Parser.evaluate("random()"), 0.5);
+    } finally {
+      Math.random = original;
+    }
+  });
+
   it("reads current scope values and preserves native object identity", () => {
     const parser = new Parser();
     const values = { a: [], obj: {}, nil: null };

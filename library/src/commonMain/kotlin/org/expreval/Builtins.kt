@@ -22,6 +22,7 @@ internal expect fun array(value: Any?): List<Any?>?
 internal expect fun radixNumber(digits: String, radix: Int): Double
 internal expect fun formatNumber(n: Double): String
 internal expect fun shiftDecimal(n: Double, places: Int): Double
+internal expect fun randomUnit(): Double
 internal expect class SecurityException(message: String) : RuntimeException
 
 internal fun truth(a: Any?): Boolean =
@@ -228,7 +229,7 @@ internal fun unaryBuiltins(): MutableMap<String, ExpressionFunction> {
     return math.mapValuesTo(linkedMapOf()) { (_, f) -> fn { f(it.num(0)) } }.apply {
         put("not", fn { !truth(it.arg(0)) })
         put("length", fn { (array(it.arg(0))?.size ?: jsString(it.arg(0)).length).toDouble() })
-        put("!", fn { factorial(it.arg(0)) })
+        put("!", factorialFunction)
     }
 }
 
@@ -315,8 +316,8 @@ internal fun functionBuiltins(): MutableMap<String, ExpressionFunction> {
             }
         }
     return linkedMapOf(
-        "random" to fn { kotlin.random.Random.nextDouble() * if (truth(it.arg(0))) it.num(0) else 1.0 },
-        "fac" to fn { factorial(it.arg(0)) },
+        "random" to fn { randomUnit() * if (truth(it.arg(0))) it.num(0) else 1.0 },
+        "fac" to factorialFunction,
         "gamma" to fn { gamma(it.num(0)) },
         "min" to fn { extrema(it, true) },
         "max" to fn { extrema(it, false) },
@@ -324,7 +325,7 @@ internal fun functionBuiltins(): MutableMap<String, ExpressionFunction> {
         "pyt" to hypot,
         "pow" to fn { power(it.num(0), it.num(1)) },
         "atan2" to fn { atan2(it.num(0), it.num(1)) },
-        "if" to fn { if (truth(it.arg(0))) it.arg(1) else it.arg(2) },
+        "if" to conditionalFunction,
         "roundTo" to fn { roundTo(it.num(0), if (it.size > 1) it.num(1) else 0.0) },
         "map" to
             fn { args ->
@@ -389,6 +390,9 @@ private fun roundTo(
     val shifted = shiftDecimal(n, places.toInt())
     return if (shifted.isFinite()) shiftDecimal(jsRound(shifted), -places.toInt()) else Double.NaN
 }
+
+private val factorialFunction = fn { factorial(it.arg(0)) }
+internal val conditionalFunction = fn { if (truth(it.arg(0))) it.arg(1) else it.arg(2) }
 
 private fun factorial(a: Any?): Double {
     val v = stringPrimitive(a)

@@ -82,7 +82,7 @@ class Parser
             internal set
         var ternaryOps: MutableMap<String, ExpressionFunction> =
             linkedMapOf(
-                "?" to fn { if (truth(it.arg(0))) it.arg(1) else it.arg(2) },
+                "?" to conditionalFunction,
             )
             internal set
         var functions: MutableMap<String, ExpressionFunction> = functionBuiltins()

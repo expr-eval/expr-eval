@@ -29,6 +29,7 @@ internal actual fun formatNumber(n: Double): String = BigDecimal.valueOf(n).stri
     if (abs(n) >= 1e-6 && abs(n) < 1e21) it.toPlainString() else it.toString().replace("E", "e")
 }
 internal actual fun shiftDecimal(n: Double, places: Int): Double = BigDecimal.valueOf(n).scaleByPowerOfTen(places).toDouble()
+internal actual fun randomUnit(): Double = kotlin.random.Random.nextDouble()
 internal actual typealias SecurityException = java.lang.SecurityException
 
 internal actual fun functionMember(value: ExpressionFunction, name: String): Any? = Undefined

@@ -42,6 +42,19 @@ private object DefaultRegistries {
     val consts = toJs(defaults.consts)
 
     init {
+        // The Kotlin vararg bridge forwards every argument. Keep Function.length observable
+        // to npm callers as it was on the original functions.
+        for (name in keys(unary)) setArity(unary[name], 1)
+        for (name in keys(binary)) setArity(binary[name], if (name == "=") 3 else 2)
+        for (name in keys(functions)) {
+            val arity = when (name) {
+                "if", "fold" -> 3
+                "roundTo", "map", "filter", "indexOf", "join" -> 2
+                else -> 1
+            }
+            setArity(functions[name], arity)
+        }
+
         // The npm API exposes native Math function identities through these registries.
         val math: dynamic = js("Math")
         val aliases = mapOf("ln" to "log", "lg" to "log10")
@@ -53,6 +66,10 @@ private object DefaultRegistries {
         binary["^"] = math.pow
         for (name in arrayOf("pow", "hypot", "atan2")) functions[name] = math[name]
         functions.pyt = math.hypot
+    }
+
+    private fun setArity(fn: dynamic, arity: Int) {
+        js("Object.defineProperty(fn, 'length', { value: arity, configurable: true })")
     }
 }
 
