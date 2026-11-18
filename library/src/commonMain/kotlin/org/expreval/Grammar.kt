@@ -67,10 +67,7 @@ private class Lexer(
                 return take(
                     Kind.LITERAL,
                     match.value.length,
-                    match.value
-                        .drop(2)
-                        .toBigInteger(radix)
-                        .toDouble(),
+                    radixNumber(match.value.drop(2), radix),
                 )
             }
             number.matchAt(source, pos)?.value?.let {

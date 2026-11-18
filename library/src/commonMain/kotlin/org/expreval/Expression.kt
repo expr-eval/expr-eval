@@ -1,5 +1,6 @@
 package org.expreval
 
+import kotlin.jvm.JvmOverloads
 import org.expreval.InstructionType.*
 
 /** A parsed expression. It can be reused with different variable maps. */

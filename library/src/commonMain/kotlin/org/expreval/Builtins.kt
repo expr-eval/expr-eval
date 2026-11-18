@@ -1,7 +1,5 @@
 package org.expreval
 
-import java.math.BigDecimal
-import java.math.RoundingMode
 import kotlin.math.*
 
 /** Represents a missing value, distinct from a Java null explicitly supplied in a scope. */
@@ -15,26 +13,11 @@ internal fun Array<out Any?>.arg(index: Int): Any? = if (index in indices) this[
 
 private fun Array<out Any?>.num(index: Int) = number(arg(index))
 
-internal fun array(value: Any?): List<Any?>? =
-    when {
-        value is List<*> -> {
-            value
-        }
-
-        value != null && value.javaClass.isArray -> {
-            List(
-                java.lang.reflect.Array
-                    .getLength(value),
-            ) {
-                java.lang.reflect.Array
-                    .get(value, it)
-            }
-        }
-
-        else -> {
-            null
-        }
-    }
+internal expect fun array(value: Any?): List<Any?>?
+internal expect fun radixNumber(digits: String, radix: Int): Double
+internal expect fun formatNumber(n: Double): String
+internal expect fun shiftDecimal(n: Double, places: Int): Double
+internal expect class SecurityException(message: String) : RuntimeException
 
 internal fun truth(a: Any?): Boolean =
     when (a) {
@@ -75,9 +58,7 @@ internal fun jsString(a: Any?): String =
                 }
 
                 else -> {
-                    BigDecimal.valueOf(n).stripTrailingZeros().let {
-                        if (abs(n) >= 1e-6 && abs(n) < 1e21) it.toPlainString() else it.toString().replace("E", "e")
-                    }
+                    formatNumber(n)
                 }
             }
         }
@@ -111,7 +92,7 @@ private fun parseNumber(s: String): Double {
     if (radix != 0) {
         val digits = text.drop(2)
         if (digits.isEmpty() || digits.any { it !in "0123456789abcdefABCDEF" || it.digitToIntOrNull(radix) == null }) return Double.NaN
-        return digits.toBigInteger(radix).toDouble()
+        return radixNumber(digits, radix)
     }
     return if (decimal.matches(text)) text.toDoubleOrNull() ?: Double.NaN else Double.NaN
 }
@@ -221,7 +202,7 @@ internal fun unaryBuiltins(): MutableMap<String, ExpressionFunction> {
             "acosh" to ::acosh,
             "atanh" to ::atanh,
             "sqrt" to ::sqrt,
-            "cbrt" to Math::cbrt,
+            "cbrt" to ::cbrt,
             "log" to ::ln,
             "ln" to ::ln,
             "lg" to ::log10,
@@ -328,7 +309,7 @@ internal fun functionBuiltins(): MutableMap<String, ExpressionFunction> {
             }
         }
     return linkedMapOf(
-        "random" to fn { Math.random() * if (truth(it.arg(0))) it.num(0) else 1.0 },
+        "random" to fn { kotlin.random.Random.nextDouble() * if (truth(it.arg(0))) it.num(0) else 1.0 },
         "fac" to fn { factorial(it.arg(0)) },
         "gamma" to fn { gamma(it.num(0)) },
         "min" to fn { extrema(it, true) },
@@ -399,13 +380,8 @@ private fun roundTo(
     if (!n.isFinite() || places % 1 != 0.0) return Double.NaN
     if (n == 0.0 || places < -324) return 0.0
     if (places > 632) return Double.NaN
-    val shifted = BigDecimal.valueOf(n).scaleByPowerOfTen(places.toInt()).toDouble()
-    if (!shifted.isFinite()) return Double.NaN
-    return BigDecimal
-        .valueOf(jsRound(shifted))
-        .setScale(0, RoundingMode.UNNECESSARY)
-        .scaleByPowerOfTen(-places.toInt())
-        .toDouble()
+    val shifted = shiftDecimal(n, places.toInt())
+    return if (shifted.isFinite()) shiftDecimal(jsRound(shifted), -places.toInt()) else Double.NaN
 }
 
 private fun factorial(a: Any?): Double {

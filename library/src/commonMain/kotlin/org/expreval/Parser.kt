@@ -10,6 +10,7 @@
 */
 package org.expreval
 
+import kotlin.jvm.JvmOverloads
 /** A function available to expressions, with a Java-compatible vararg signature. */
 fun interface ExpressionFunction {
     fun call(vararg args: Any?): Any?
@@ -79,8 +80,8 @@ class Parser
         val functions: MutableMap<String, ExpressionFunction> = functionBuiltins()
         val consts: MutableMap<String, Any?> =
             linkedMapOf(
-                "E" to Math.E,
-                "PI" to Math.PI,
+                "E" to kotlin.math.E,
+                "PI" to kotlin.math.PI,
                 "true" to true,
                 "false" to false,
             )

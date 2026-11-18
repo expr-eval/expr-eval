@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.3.20"
+    kotlin("multiplatform") version "2.3.20"
     id("org.jetbrains.dokka") version "2.2.0"
     `maven-publish`
     signing
@@ -11,28 +11,32 @@ version = providers.gradleProperty("releaseVersion").getOrElse("3.8.1-SNAPSHOT")
 repositories { mavenCentral() }
 
 kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        freeCompilerArgs.add("-Xjdk-release=17")
+    jvm {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xjdk-release=17")
+        }
+        testRuns["test"].executionTask.configure { useJUnitPlatform() }
+    }
+    js(IR) {
+        useEsModules()
+        outputModuleName.set("expr-eval")
+        nodejs()
+        binaries.library()
+    }
+    sourceSets {
+        commonTest.dependencies { implementation(kotlin("test")) }
+        jvmTest {
+            resources.srcDir(rootProject.file("parity"))
+            dependencies {
+                implementation("org.junit.jupiter:junit-jupiter:5.14.1")
+                runtimeOnly("org.junit.platform:junit-platform-launcher:1.14.1")
+            }
+        }
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-    withSourcesJar()
-}
-
-dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.14.1")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.14.1")
-}
-
-sourceSets.test {
-    resources.srcDir(rootProject.file("parity"))
-}
-
-tasks.test { useJUnitPlatform() }
+tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
 
 val docsJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
@@ -46,9 +50,8 @@ val release = version.toString()
 
 publishing {
     publications {
-        create<MavenPublication>("jvm") {
+        named<MavenPublication>("jvm") {
             artifactId = artifact
-            from(components["java"])
             artifact(docsJar)
             pom {
                 name.set("expr-eval JVM")
@@ -106,7 +109,7 @@ stagePublication.configure {
 tasks.register<Zip>("centralBundle") {
     group = "publishing"
     description = "Builds a signed archive for manual upload to the Maven Central Portal."
-    dependsOn(validateCentralBundle, stagePublication, tasks.test)
+    dependsOn(validateCentralBundle, stagePublication, tasks.named("jvmTest"))
     from(stage) { include("$coordinatePath/**") }
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
     archiveFileName.set("$artifact-$release-central.zip")
