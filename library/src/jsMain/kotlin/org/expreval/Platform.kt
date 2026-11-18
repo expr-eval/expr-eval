@@ -19,3 +19,5 @@ internal actual class SecurityException actual constructor(message: String) : Ru
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 fun securityErrorType(): dynamic = SecurityException::class.js
+
+internal actual fun functionMember(value: ExpressionFunction, name: String): Any? = fromJs(toJs(value)[name])

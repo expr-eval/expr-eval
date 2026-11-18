@@ -131,7 +131,7 @@ class Expression(
             pending.clear()
         }
         for (item in items) {
-            val op = item.value.toString()
+            val op = item.value as? String ?: ""
             when {
                 item.type == INUMBER || item.type == IVARNAME -> {
                     pending.add(item)
@@ -191,7 +191,7 @@ internal fun render(items: List<Instruction>, javascript: Boolean = false): Stri
 
     fun args(count: Any?) = List(count as Int) { pop() }.asReversed().joinToString(", ")
     for (item in items) {
-        val op = item.value.toString()
+        val op = item.value as? String ?: ""
         val part =
             when (item.type) {
                 INUMBER -> {

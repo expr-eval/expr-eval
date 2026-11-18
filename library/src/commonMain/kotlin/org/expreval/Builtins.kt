@@ -13,6 +13,11 @@ internal fun Array<out Any?>.arg(index: Int): Any? = if (index in indices) this[
 
 private fun Array<out Any?>.num(index: Int) = number(arg(index))
 
+internal interface MemberSource {
+    fun member(name: String): Any?
+}
+
+internal expect fun functionMember(value: ExpressionFunction, name: String): Any?
 internal expect fun array(value: Any?): List<Any?>?
 internal expect fun radixNumber(digits: String, radix: Int): Double
 internal expect fun formatNumber(n: Double): String
@@ -273,7 +278,8 @@ internal fun property(
     name: String,
 ): Any? {
     if (value == null || value === Undefined) throw IllegalArgumentException("Cannot read property $name of $value")
-    if (value is ExpressionFunction && name == "bind") return FunctionBind
+    if (value is ExpressionFunction) return if (name == "bind") FunctionBind else functionMember(value, name)
+    if (value is MemberSource) return value.member(name)
     if (value is Map<*, *>) return if (value.containsKey(name)) value[name] else Undefined
     val array = array(value)
     if (name == "length") {

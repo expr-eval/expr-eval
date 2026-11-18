@@ -10,17 +10,18 @@ private fun owns(obj: dynamic, key: String): Boolean = js("Object.prototype.hasO
 internal fun defaultObject(value: dynamic): dynamic = value ?: plainObject()
 
 internal class ObjectMap<V>(
-    private val obj: dynamic,
+    val obj: dynamic,
     private val decode: (dynamic) -> V,
     private val encode: (V) -> dynamic,
-) : AbstractMutableMap<String, V>() {
+) : AbstractMutableMap<String, V>(), MemberSource {
+    override fun member(name: String): Any? = fromJs(obj[name])
     override fun containsKey(key: String): Boolean = owns(obj, key)
     override fun get(key: String): V? = if (containsKey(key)) decode(obj[key]) else null
     override fun put(key: String, value: V): V? {
         val previous = get(key)
         val native = encode(value)
         val target = obj
-        js("Object.defineProperty(target, key, {value:native, writable:true, enumerable:true, configurable:true})")
+        target[key] = native
         return previous
     }
     override val entries: MutableSet<MutableMap.MutableEntry<String, V>>
@@ -43,7 +44,7 @@ internal fun scopeMap(obj: dynamic): MutableMap<String, Any?> = ObjectMap(defaul
 
 internal fun fromJs(value: dynamic): Any? {
     if (jsTypeOf(value) == "undefined") return Undefined
-    if (value == null || jsTypeOf(value) !in setOf("object", "function")) return value
+    if (value == null || jsTypeOf(value) != "object" && jsTypeOf(value) != "function") return value
     if (fromJsCache.has(value) as Boolean) return fromJsCache.get(value)
     val wrapped: Any = when {
         jsTypeOf(value) == "function" -> NativeFunction(value)
@@ -57,7 +58,9 @@ internal fun fromJs(value: dynamic): Any? {
 
 internal fun toJs(value: Any?): dynamic {
     if (value === Undefined) return js("undefined")
-    if (value == null || jsTypeOf(value) !in setOf("object", "function")) return value
+    if (value is Scope) return toJs(value.bindings)
+    if (value is ObjectMap<*>) return value.obj
+    if (value == null || jsTypeOf(value) != "object" && jsTypeOf(value) != "function") return value
     if (toJsCache.has(value) as Boolean) return toJsCache.get(value)
     val native: dynamic = when (value) {
         FunctionBind -> js("Function.prototype.bind")
@@ -69,13 +72,15 @@ internal fun toJs(value: Any?): dynamic {
         }
         is List<*> -> value.map(::toJs).toTypedArray()
         is Map<*, *> -> {
-            val obj: dynamic = js("Object.create(null)")
+            val obj = plainObject()
             for ((key, element) in value) obj[key] = toJs(element)
             obj
         }
         else -> return value
     }
     toJsCache.set(value, native)
-    fromJsCache.set(native, value)
+    // Arrays and objects become live native values once exposed. Import them through
+    // the native views on the next read so caller mutations remain visible.
+    if (value is ExpressionFunction) fromJsCache.set(native, value)
     return native
 }

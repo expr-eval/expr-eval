@@ -11,6 +11,7 @@
 package org.expreval
 
 import kotlin.jvm.JvmOverloads
+
 /** A function available to expressions, with a Java-compatible vararg signature. */
 fun interface ExpressionFunction {
     fun call(vararg args: Any?): Any?
@@ -71,6 +72,8 @@ class Parser
     constructor(
         options: ParserOptions = ParserOptions(),
     ) {
+        internal var onDefine: ((ExpressionFunction) -> Unit)? = null
+
         var options: ParserOptions = options
             internal set
         var unaryOps: MutableMap<String, ExpressionFunction> = unaryBuiltins()
@@ -91,7 +94,6 @@ class Parser
                 "true" to true,
                 "false" to false,
             )
-
             internal set
 
         fun parse(expression: String): Expression = Expression(Grammar(this, expression).parse(), this)

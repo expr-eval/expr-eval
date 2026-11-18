@@ -30,3 +30,5 @@ internal actual fun formatNumber(n: Double): String = BigDecimal.valueOf(n).stri
 }
 internal actual fun shiftDecimal(n: Double, places: Int): Double = BigDecimal.valueOf(n).scaleByPowerOfTen(places).toDouble()
 internal actual typealias SecurityException = java.lang.SecurityException
+
+internal actual fun functionMember(value: ExpressionFunction, name: String): Any? = Undefined

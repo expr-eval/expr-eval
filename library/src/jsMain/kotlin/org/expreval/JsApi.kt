@@ -6,9 +6,14 @@ package org.expreval
 // operation goes through the shared parser and instruction evaluator.
 @JsExport
 @JsName("Instruction")
-class JsInstruction(val type: String, value: dynamic = 0) {
+class JsInstruction(var type: String, value: dynamic = 0) {
     var value: dynamic = value ?: 0
-    override fun toString(): String = instruction().toString()
+    // The npm Instruction API returns the original literal (including a number or boolean).
+    override fun toString(): dynamic = when (type) {
+        "INUMBER", "IOP1", "IOP2", "IOP3", "IVAR", "IVARNAME", "IENDSTATEMENT" -> value
+        "IFUNCALL", "IFUNDEF", "IARRAY", "IMEMBER" -> instruction().toString()
+        else -> "Invalid Instruction"
+    }
     internal fun instruction(): Instruction = readInstruction(this)
 }
 
@@ -26,28 +31,30 @@ private fun writeTokens(tokens: List<Instruction>): Array<JsInstruction> = token
     JsInstruction(item.type.name, value)
 }.toTypedArray()
 
-private val defaults = Parser()
-private val defaultUnary = toJs(defaults.unaryOps)
-private val defaultBinary = toJs(defaults.binaryOps)
-private val defaultTernary = toJs(defaults.ternaryOps)
-private val defaultFunctions = toJs(defaults.functions)
-private val defaultConsts = toJs(defaults.consts)
+private var functionCounter = 0
+private val engines: dynamic = js("new WeakMap()")
+private object DefaultRegistries {
+    private val defaults = Parser()
+    val unary = toJs(defaults.unaryOps)
+    val binary = toJs(defaults.binaryOps)
+    val ternary = toJs(defaults.ternaryOps)
+    val functions = toJs(defaults.functions)
+    val consts = toJs(defaults.consts)
 
-// The npm API exposes native Math function identities through these registries.
-private val nativeMath: dynamic = js("Math")
-private fun installMath() {
-    val aliases = mapOf("ln" to "log", "lg" to "log10")
-    for (name in keys(defaultUnary)) {
-        val native = nativeMath[aliases[name] ?: name]
-        if (jsTypeOf(native) == "function") defaultUnary[name] = native
+    init {
+        // The npm API exposes native Math function identities through these registries.
+        val math: dynamic = js("Math")
+        val aliases = mapOf("ln" to "log", "lg" to "log10")
+        for (name in keys(unary)) {
+            val native = math[aliases[name] ?: name]
+            if (jsTypeOf(native) == "function") unary[name] = native
+        }
+        unary["+"] = js("Number")
+        binary["^"] = math.pow
+        for (name in arrayOf("pow", "hypot", "atan2")) functions[name] = math[name]
+        functions.pyt = math.hypot
     }
-    defaultUnary["+"] = js("Number")
-    defaultBinary["^"] = nativeMath.pow
-    for (name in arrayOf("pow", "hypot", "atan2")) defaultFunctions[name] = nativeMath[name]
-    defaultFunctions.pyt = nativeMath.hypot
 }
-
-private val installedMath = installMath()
 
 private fun functionMap(obj: dynamic) =
     ObjectMap(obj, { fromJs(it) as ExpressionFunction }, ::toJs)
@@ -55,16 +62,20 @@ private fun functionMap(obj: dynamic) =
 @JsExport
 @JsName("Parser")
 class JsParser(var options: dynamic = plainObject()) {
-    var unaryOps: dynamic = defaultUnary
-    var binaryOps: dynamic = defaultBinary
-    var ternaryOps: dynamic = defaultTernary
-    var functions: dynamic = defaultFunctions
-    var consts: dynamic = defaultConsts
+    var unaryOps: dynamic = DefaultRegistries.unary
+    var binaryOps: dynamic = DefaultRegistries.binary
+    var ternaryOps: dynamic = DefaultRegistries.ternary
+    var functions: dynamic = DefaultRegistries.functions
+    var consts: dynamic = DefaultRegistries.consts
 
-    private val engine = Parser()
+    init {
+        val engine = Parser()
+        engine.onDefine = { function -> functions["lambda_${functionCounter++}"] = toJs(function) }
+        engines.set(this, engine)
+    }
 
     internal fun core(): Parser {
-        installedMath
+        val engine = engines.get(this) as Parser
         val settings = defaultObject(options)
         engine.options = ParserOptions(settings.allowMemberAccess !== false,
             ObjectMap(defaultObject(settings.operators), { js("Boolean(it)") as Boolean }, { it }))
@@ -103,6 +114,7 @@ class JsExpression(var tokens: dynamic, var parser: JsParser) {
         // Preserve the npm API's native Function calling convention and live registry lookup.
         val body = "with(this.functions) with(this.ternaryOps) with(this.binaryOps) with(this.unaryOps) { return $code; }"
         val compiled = js("new Function(param, body)")
-        return compiled.bind(this)
+        val receiver = this
+        return js("(...args) => compiled.apply(receiver, args)")
     }
 }

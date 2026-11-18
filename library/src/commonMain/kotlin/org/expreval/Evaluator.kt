@@ -11,22 +11,27 @@ internal fun guardName(name: String) {
 /** Use the caller's map for assignments when it supports mutation. */
 internal class Scope(
     values: Map<String, Any?>,
-) {
+) : AbstractMutableMap<String, Any?>() {
     private var current = values
-    val values get() = current
+    val bindings get() = current
+    override val entries get() = current.toMutableMap().entries
+    override fun get(key: String): Any? = current[key]
+    override fun containsKey(key: String): Boolean = current.containsKey(key)
 
-    fun set(
-        name: String,
+    override fun put(
+        key: String,
         value: Any?,
-    ) {
+    ): Any? {
+        val previous = current[key]
         try {
             @Suppress("UNCHECKED_CAST")
-            (current as MutableMap<String, Any?>)[name] = value
+            (current as MutableMap<String, Any?>)[key] = value
         } catch (_: UnsupportedOperationException) {
-            current = current.toMutableMap().apply { put(name, value) }
+            current = current.toMutableMap().apply { put(key, value) }
         } catch (_: ClassCastException) {
-            current = current.toMutableMap().apply { put(name, value) }
+            current = current.toMutableMap().apply { put(key, value) }
         }
+        return previous
     }
 }
 
@@ -82,7 +87,7 @@ internal class Evaluator(
 
         fun leftValue(value: Any?) = if (callable) resolve(value) else value
         for (item in items) {
-            val op = item.value.toString()
+            val op = item.value as? String ?: ""
             val value =
                 when (item.type) {
                     INUMBER, IVARNAME -> {
@@ -93,8 +98,8 @@ internal class Evaluator(
                         guardName(op)
                         expression.functions[op]
                             ?: expression.unaryOps[op]?.takeIf { expression.parser.isOperatorEnabled(op) }
-                            ?: property(scope.values, op).let {
-                                if (it === Undefined && !(callable && scope.values.containsKey(op))) {
+                            ?: property(scope.bindings, op).let {
+                                if (it === Undefined && !(callable && scope.bindings.containsKey(op))) {
                                     throw IllegalArgumentException("undefined variable: $op")
                                 }
                                 checkValue(it, "Variable references an unallowed function: $op")
@@ -122,20 +127,7 @@ internal class Evaluator(
                                 guardName(name)
                                 val result = resolve(right)
                                 val setter = expression.binaryOps.getValue(op)
-                                setter.call(
-                                    left,
-                                    result,
-                                    object : MutableMap<String, Any?> by scope.values.toMutableMap() {
-                                        override fun put(
-                                            key: String,
-                                            value: Any?,
-                                        ): Any? {
-                                            val previous = scope.values[key]
-                                            scope.set(key, value)
-                                            return previous
-                                        }
-                                    },
-                                )
+                                setter.call(left, result, scope)
                             }
 
                             else -> {
@@ -216,12 +208,13 @@ internal class Evaluator(
                             Defined(
                                 expression.parser,
                                 fn { args ->
-                                    val local = scope.values.toMutableMap()
+                                    val local = scope.bindings.toMutableMap()
                                     names.forEachIndexed { i, parameter -> local[parameter] = args.arg(i) }
                                     run(body.items, Scope(local))
                                 },
                             )
-                        scope.set(name, function)
+                        expression.parser.onDefine?.invoke(function)
+                        scope[name] = function
                         function
                     }
 
