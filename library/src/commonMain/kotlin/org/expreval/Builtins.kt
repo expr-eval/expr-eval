@@ -342,7 +342,7 @@ internal fun functionBuiltins(): MutableMap<String, ExpressionFunction> {
                     if (sequence is String) {
                         sequence.indexOf(jsString(it.arg(0)))
                     } else {
-                        requireArray(sequence, "Second argument to indexOf (expected string or array)")
+                        (array(sequence) ?: throw IllegalArgumentException("Second argument to indexOf is not a string or array"))
                             .indexOfFirst { value -> equal(it.arg(0), value) }
                     }
                 ).toDouble()

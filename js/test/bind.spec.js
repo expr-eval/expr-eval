@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
-import { Parser } from "../src/parser";
+import { Parser } from "@expr-eval/js";
 
 const cases = readFileSync(resolve(cwd(), "../parity/bind.tsv"), "utf8")
   .trimEnd()

@@ -11,4 +11,11 @@ internal actual fun shiftDecimal(n: Double, places: Int): Double {
     val parts = n.toString().split("e")
     return (parts[0] + "e" + ((parts.getOrNull(1)?.toInt() ?: 0) + places)).toDouble()
 }
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+@JsName("SecurityError")
 internal actual class SecurityException actual constructor(message: String) : RuntimeException(message)
+
+@OptIn(ExperimentalJsExport::class)
+@JsExport
+fun securityErrorType(): dynamic = SecurityException::class.js

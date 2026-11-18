@@ -1,0 +1,108 @@
+@file:OptIn(ExperimentalJsExport::class)
+
+package org.expreval
+
+// These adapters preserve the npm object's mutable fields and native values. Every expression
+// operation goes through the shared parser and instruction evaluator.
+@JsExport
+@JsName("Instruction")
+class JsInstruction(val type: String, value: dynamic = 0) {
+    var value: dynamic = value ?: 0
+    override fun toString(): String = instruction().toString()
+    internal fun instruction(): Instruction = readInstruction(this)
+}
+
+private fun readInstruction(item: dynamic): Instruction {
+    val type = InstructionType.valueOf(item.type as String)
+    val value: Any? = if (type == InstructionType.IEXPR) readTokens(item.value) else fromJs(item.value)
+    return Instruction(type, value)
+}
+
+private fun readTokens(tokens: dynamic): List<Instruction> =
+    (tokens as Array<dynamic>).map(::readInstruction)
+
+private fun writeTokens(tokens: List<Instruction>): Array<JsInstruction> = tokens.map { item ->
+    val value = if (item.type == InstructionType.IEXPR) writeTokens(item.block()) else toJs(item.value)
+    JsInstruction(item.type.name, value)
+}.toTypedArray()
+
+private val defaults = Parser()
+private val defaultUnary = toJs(defaults.unaryOps)
+private val defaultBinary = toJs(defaults.binaryOps)
+private val defaultTernary = toJs(defaults.ternaryOps)
+private val defaultFunctions = toJs(defaults.functions)
+private val defaultConsts = toJs(defaults.consts)
+
+// The npm API exposes native Math function identities through these registries.
+private val nativeMath: dynamic = js("Math")
+private fun installMath() {
+    val aliases = mapOf("ln" to "log", "lg" to "log10")
+    for (name in keys(defaultUnary)) {
+        val native = nativeMath[aliases[name] ?: name]
+        if (jsTypeOf(native) == "function") defaultUnary[name] = native
+    }
+    defaultUnary["+"] = js("Number")
+    defaultBinary["^"] = nativeMath.pow
+    for (name in arrayOf("pow", "hypot", "atan2")) defaultFunctions[name] = nativeMath[name]
+    defaultFunctions.pyt = nativeMath.hypot
+}
+
+private val installedMath = installMath()
+
+private fun functionMap(obj: dynamic) =
+    ObjectMap(obj, { fromJs(it) as ExpressionFunction }, ::toJs)
+
+@JsExport
+@JsName("Parser")
+class JsParser(var options: dynamic = plainObject()) {
+    var unaryOps: dynamic = defaultUnary
+    var binaryOps: dynamic = defaultBinary
+    var ternaryOps: dynamic = defaultTernary
+    var functions: dynamic = defaultFunctions
+    var consts: dynamic = defaultConsts
+
+    private val engine = Parser()
+
+    internal fun core(): Parser {
+        installedMath
+        val settings = defaultObject(options)
+        engine.options = ParserOptions(settings.allowMemberAccess !== false,
+            ObjectMap(defaultObject(settings.operators), { js("Boolean(it)") as Boolean }, { it }))
+        engine.unaryOps = functionMap(unaryOps)
+        engine.binaryOps = functionMap(binaryOps)
+        engine.ternaryOps = functionMap(ternaryOps)
+        engine.functions = functionMap(functions)
+        engine.consts = scopeMap(consts)
+        return engine
+    }
+
+    fun parse(expression: String): JsExpression = JsExpression(writeTokens(core().parse(expression).tokens), this)
+    fun evaluate(expression: String, variables: dynamic = null): dynamic = parse(expression).evaluate(variables)
+    fun isOperatorEnabled(op: String): Boolean = core().isOperatorEnabled(op)
+}
+
+@JsExport
+@JsName("Expression")
+class JsExpression(var tokens: dynamic, var parser: JsParser) {
+    val unaryOps: dynamic get() = parser.unaryOps
+    val binaryOps: dynamic get() = parser.binaryOps
+    val ternaryOps: dynamic get() = parser.ternaryOps
+    val functions: dynamic get() = parser.functions
+    private fun core() = Expression(readTokens(tokens), parser.core())
+    private fun wrap(expr: Expression) = JsExpression(writeTokens(expr.tokens), parser)
+    fun simplify(values: dynamic = null): JsExpression = wrap(core().simplify(scopeMap(values)))
+    fun substitute(variable: String, expr: dynamic): JsExpression =
+        wrap(if (expr is JsExpression) core().substitute(variable, (expr as JsExpression).core())
+             else core().substitute(variable, js("String(expr)") as String))
+    fun evaluate(values: dynamic = null): dynamic = toJs(core().evaluate(scopeMap(values)))
+    override fun toString(): String = core().toString()
+    fun symbols(options: dynamic = null): Array<String> = core().symbols(SymbolOptions(options?.withMembers == true)).toTypedArray()
+    fun variables(options: dynamic = null): Array<String> = core().variables(SymbolOptions(options?.withMembers == true)).toTypedArray()
+    fun toJSFunction(param: dynamic = "", variables: dynamic = null): dynamic {
+        val code = render(core().simplify(scopeMap(variables)).tokens, javascript = true)
+        // Preserve the npm API's native Function calling convention and live registry lookup.
+        val body = "with(this.functions) with(this.ternaryOps) with(this.binaryOps) with(this.unaryOps) { return $code; }"
+        val compiled = js("new Function(param, body)")
+        return compiled.bind(this)
+    }
+}

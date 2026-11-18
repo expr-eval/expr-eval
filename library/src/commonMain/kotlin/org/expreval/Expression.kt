@@ -184,7 +184,7 @@ class Expression(
 @Suppress("UNCHECKED_CAST")
 internal fun Instruction.block() = value as List<Instruction>
 
-private fun render(items: List<Instruction>): String {
+internal fun render(items: List<Instruction>, javascript: Boolean = false): String {
     val stack = mutableListOf<String>()
 
     fun pop() = if (stack.isEmpty()) "undefined" else stack.removeAt(stack.lastIndex)
@@ -206,15 +206,27 @@ private fun render(items: List<Instruction>): String {
                     val operand = pop()
                     when (op) {
                         "-", "+" -> "($op$operand)"
-                        "!" -> "($operand!)"
-                        else -> "($op $operand)"
+                        "!" -> if (javascript) "fac($operand)" else "($operand!)"
+                        "not" -> if (javascript) "(!$operand)" else "(not $operand)"
+                        else -> if (javascript) "$op($operand)" else "($op $operand)"
                     }
                 }
 
                 IOP2 -> {
                     val right = pop()
                     val left = pop()
-                    if (op == "[") "$left[$right]" else "($left $op $right)"
+                    if (javascript) {
+                        when (op) {
+                            "^" -> "Math.pow($left, $right)"
+                            "and" -> "(!!$left && !!$right)"
+                            "or" -> "(!!$left || !!$right)"
+                            "||" -> "((a,b) => Array.isArray(a) && Array.isArray(b) ? a.concat(b) : String(a) + String(b))($left,$right)"
+                            "==" -> "($left === $right)"
+                            "!=" -> "($left !== $right)"
+                            "[" -> "$left[($right) | 0]"
+                            else -> "($left $op $right)"
+                        }
+                    } else if (op == "[") "$left[$right]" else "($left $op $right)"
                 }
 
                 IOP3 -> {
@@ -232,7 +244,8 @@ private fun render(items: List<Instruction>): String {
                 IFUNDEF -> {
                     val body = pop()
                     val args = args(item.value)
-                    "(${pop()}($args) = $body)"
+                    val name = pop()
+                    if (javascript) "($name = function($args) { return $body })" else "($name($args) = $body)"
                 }
 
                 IMEMBER -> {
@@ -244,7 +257,7 @@ private fun render(items: List<Instruction>): String {
                 }
 
                 IEXPR -> {
-                    "(${render(item.block())})"
+                    "(${render(item.block(), javascript)})"
                 }
 
                 IENDSTATEMENT -> {
@@ -257,7 +270,7 @@ private fun render(items: List<Instruction>): String {
             }
         stack.add(part)
     }
-    return if (stack.isEmpty()) "undefined" else stack.joinToString(";")
+    return if (stack.isEmpty()) "undefined" else stack.joinToString(if (javascript) "," else ";")
 }
 
 private fun literalText(

@@ -69,22 +69,30 @@ data class Instruction
 class Parser
     @JvmOverloads
     constructor(
-        val options: ParserOptions = ParserOptions(),
+        options: ParserOptions = ParserOptions(),
     ) {
-        val unaryOps: MutableMap<String, ExpressionFunction> = unaryBuiltins()
-        val binaryOps: MutableMap<String, ExpressionFunction> = binaryBuiltins()
-        val ternaryOps: MutableMap<String, ExpressionFunction> =
+        var options: ParserOptions = options
+            internal set
+        var unaryOps: MutableMap<String, ExpressionFunction> = unaryBuiltins()
+            internal set
+        var binaryOps: MutableMap<String, ExpressionFunction> = binaryBuiltins()
+            internal set
+        var ternaryOps: MutableMap<String, ExpressionFunction> =
             linkedMapOf(
                 "?" to fn { if (truth(it.arg(0))) it.arg(1) else it.arg(2) },
             )
-        val functions: MutableMap<String, ExpressionFunction> = functionBuiltins()
-        val consts: MutableMap<String, Any?> =
+            internal set
+        var functions: MutableMap<String, ExpressionFunction> = functionBuiltins()
+            internal set
+        var consts: MutableMap<String, Any?> =
             linkedMapOf(
                 "E" to kotlin.math.E,
                 "PI" to kotlin.math.PI,
                 "true" to true,
                 "false" to false,
             )
+
+            internal set
 
         fun parse(expression: String): Expression = Expression(Grammar(this, expression).parse(), this)
 

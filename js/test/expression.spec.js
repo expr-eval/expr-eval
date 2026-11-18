@@ -1,6 +1,6 @@
 import { assert } from "vitest";
-import { Parser } from "@/parser";
-import { SecurityError } from "@/evaluate";
+import { Parser } from "@expr-eval/js";
+import { SecurityError } from "../dist/internal.js";
 
 describe("Expression", function () {
   describe("evaluate()", function () {

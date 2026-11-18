@@ -1,5 +1,5 @@
 import { assert } from "vitest";
-import { Parser } from "@/parser";
+import { Parser } from "@expr-eval/js";
 
 describe("Functions", function () {
   describe("roundTo()", function () {
