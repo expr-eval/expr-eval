@@ -8,7 +8,7 @@ import globals from "globals";
 
 export default defineConfig(
   {
-    ignores: ["node_modules", "dist"],
+    ignores: ["node_modules", "dist", "types"],
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,

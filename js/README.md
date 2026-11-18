@@ -396,8 +396,10 @@ const parser = new Parser();
 parser.consts = {};
 ```
 
-### Tests
+### Development
 
-1. `cd` to the project directory
-2. Install development dependencies: `npm install`
-3. Run the tests: `npm test`
+From the repository root, enter `nix develop` or install Java 17+ and the Node
+version listed in `js/.nvmrc`. Run `npm ci` and `npm test` from `js/`. The
+test script compiles the shared Kotlin source and runs the JavaScript suite
+against the bundled npm package. Run `./gradlew :library:allTests` from the
+root to run the Kotlin suite on both platforms.

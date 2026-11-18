@@ -912,7 +912,7 @@ describe("Parser", function () {
           fndef: true,
         },
       });
-      /** @type {import("../src/instruction").ValueObject} */
+      /** @type {import("@expr-eval/js").ValueObject} */
       var obj = {};
       assert.strictEqual(
         parser.evaluate("f(x) = x * x", obj) instanceof Function,

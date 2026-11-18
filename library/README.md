@@ -59,17 +59,17 @@ need JavaScript-style `this` can override `callWithReceiver`; calling a detached
 The usual function allowlist and member-access controls still apply.
 
 The project targets Java 17. For local Maven consumption, run
-`./gradlew :jvm:publishToMavenLocal`, then use
+`./gradlew :library:publishJvmPublicationToMavenLocal`, then use
 `io.github.expr-eval:expr-eval:3.8.1-SNAPSHOT`.
 
 To prepare a release, configure a GPG signing key and select it via
 `signing.gnupg.keyName` in your Gradle properties if needed. Run:
 
 ```sh
-./gradlew :jvm:centralBundle -PreleaseVersion=3.8.1 -PcentralSigning=true
+./gradlew :library:centralBundle -PreleaseVersion=3.8.1 -PcentralSigning=true
 ```
 
-This creates a signed archive under `jvm/build/distributions/` with the binary,
+This creates a signed archive under `library/build/distributions/` with the binary,
 sources, API docs, POM, and checksums. A maintainer with the verified
 `io.github.expr-eval` namespace can [upload the archive through Central Portal](https://central.sonatype.org/publish/publish-portal-upload/).
 The Gradle task only writes local files.

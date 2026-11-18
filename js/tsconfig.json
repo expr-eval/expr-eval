@@ -1,31 +1,10 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "es2020",
+    "module": "NodeNext",
     "strict": true,
-    "importHelpers": true,
-    "moduleResolution": "bundler",
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "allowJs": true,
-    "checkJs": true,
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-    "types": ["node", "vite/client", "vitest/globals"],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "outDir": "./dist"
+    "noEmit": true,
+    "types": []
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "src/**/*.js",
-    "test/**/*.js",
-    "vite.config.ts"
-  ],
-  "exclude": ["node_modules"]
+  "include": ["types/**/*.d.ts", "test/types.ts"]
 }

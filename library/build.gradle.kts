@@ -11,6 +11,7 @@ version = providers.gradleProperty("releaseVersion").getOrElse("3.8.1-SNAPSHOT")
 repositories { mavenCentral() }
 
 kotlin {
+    compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
     jvm {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -89,6 +90,12 @@ publishing {
             url = uri(stage)
         }
     }
+}
+
+// Central receives a standalone JVM artifact. KMP's target metadata otherwise points
+// consumers to a root KMP publication that is not part of this Maven bundle.
+tasks.named<GenerateModuleMetadata>("generateMetadataFileForJvmPublication") {
+    enabled = false
 }
 
 val signCentral = providers.gradleProperty("centralSigning").map(String::toBoolean).getOrElse(false)

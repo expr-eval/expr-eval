@@ -24,13 +24,21 @@ jobs:
           cache: npm
           cache-dependency-path: js/package-lock.json
 
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
       - run: npm ci
+      - run: npm test
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
-      - run: npm run build
 
-  jvm:
+  kotlin:
+    strategy:
+      matrix:
+        java: [17, 25]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,6 +48,8 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ matrix.java }}
           cache: gradle
-      - run: ./gradlew :jvm:build
+      - run: ./gradlew :library:jvmTest
+      - if: matrix.java == 17
+        run: ./gradlew :library:jsNodeTest

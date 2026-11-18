@@ -1,15 +1,15 @@
 # expr-eval
 
-Parse and evaluate mathematical expressions with the same syntax on JavaScript and the JVM.
+The npm and JVM packages evaluate mathematical expressions with one Kotlin Multiplatform implementation in `library/src/commonMain`.
 
 - [JavaScript and TypeScript package](js/README.md)
-- [Kotlin and Java library](jvm/README.md)
+- [Kotlin and Java library](library/README.md)
 
 Run both suites from the repository root:
 
 ```sh
 nix develop                  # optional when Java 17+ and the Node version in js/.nvmrc are installed
-./gradlew :jvm:build
+./gradlew :library:allTests
 npm --prefix js ci
 npm --prefix js test
 ```
