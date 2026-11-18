@@ -35,7 +35,7 @@ class BindTest {
         assertEquals(true, parser.evaluate("min.bind == max.bind"))
         assertTrue((parser.evaluate("32 + min.bind") as Double).isNaN())
         assertSame(bind, parser.parse("min.bind").toFunction().call())
-        assertEquals("32function bind() { [native code] }", parser.parse("32 + min.bind").toFunction().call())
+        assertTrue((parser.parse("32 + min.bind").toFunction().call() as Double).isNaN())
     }
 
     @Test

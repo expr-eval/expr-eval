@@ -7,7 +7,7 @@ evaluate	min.bind(0, 5)(3)	error	Is not an allowed function.
 evaluate	b=min.bind; b()	error	Variable references an unallowed function: b
 callable	min.bind	function	
 callable	min.bind == max.bind	boolean	true
-callable	32 + min.bind	string	32function bind() { [native code] }
+callable	32 + min.bind	number	NaN
 callable	min.bind()(3, 8)	number	3
 callable	min.bind(0, 5)(3)	number	3
 callable	(min.bind)(0, 5)(9)	number	5

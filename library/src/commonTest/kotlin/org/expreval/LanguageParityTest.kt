@@ -88,8 +88,27 @@ class LanguageParityTest {
     }
 
     @Test
+    fun additionUsesTheSameOperatorInBothModes() {
+        val expr = parser.parse("a + b")
+        val add = expr.toFunction(listOf("a", "b"))
+        val cases = listOf(
+            Triple("2", 1, 3.0),
+            Triple(2, "1", 3.0),
+            Triple("2", "10", 12.0),
+            Triple(null, true, 1.0),
+            Triple("abc", 1, Double.NaN),
+        )
+        for ((a, b, expected) in cases) {
+            assertEquals(expected, expr.evaluate(mapOf("a" to a, "b" to b)))
+            assertEquals(expected, add.call(a, b))
+        }
+        parser.binaryOps["+"] = ExpressionFunction { args -> args.toList() }
+        assertEquals(listOf("2", 1), expr.evaluate(mapOf("a" to "2", "b" to 1)))
+        assertEquals(listOf("2", 1), add.call("2", 1))
+    }
+
+    @Test
     fun callableParity() {
-        assertEquals("12", parser.parse("a + b").toFunction(listOf("a", "b")).call("1", 2))
         assertEquals(3.0, parser.parse("(x = 2; x); x+1").toFunction().call())
         assertEquals(4.0, parser.parse("(x = 2; x) + x").toFunction().call())
         assertEquals(listOf(2.0, 2.0), parser.parse("[(x=2; x), x]").toFunction().call())

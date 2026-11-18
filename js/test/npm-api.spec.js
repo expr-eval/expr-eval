@@ -29,6 +29,32 @@ describe("npm consumer API", () => {
     assert.throws(() => new fn(2, 3), TypeError);
   });
 
+  it("uses numeric addition in evaluate and toJSFunction", () => {
+    const expr = Parser.parse("x + 1");
+    const addOne = expr.toJSFunction("x");
+    for (const [x, expected] of [
+      ["2", 3],
+      [[2], 3],
+      [null, 1],
+      ["abc", NaN],
+    ]) {
+      assert.equal(expr.evaluate({ x }), expected);
+      assert.equal(addOne(x), expected);
+    }
+    assert.equal(expr.toJSFunction("", { x: "2" })(), 3);
+    assert.equal(Parser.parse("x || 1").toJSFunction("x")("2"), "21");
+  });
+
+  it("uses the parser's addition operator inside compiled function definitions", () => {
+    const parser = new Parser();
+    const expr = parser.parse("(sumPair(a,b) = a+b)(x,y)");
+    const compiled = expr.toJSFunction("x,y,sumPair");
+    assert.equal(compiled("2", "1"), 3);
+    parser.binaryOps["+"] = (a, b) => [a, b];
+    assert.deepEqual(expr.evaluate({ x: "2", y: 1 }), ["2", 1]);
+    assert.deepEqual(compiled("2", 1), ["2", 1]);
+  });
+
   it("preserves built-in aliases and their public arities", () => {
     const parser = new Parser();
     assert.equal(parser.functions.fac, parser.unaryOps["!"]);
