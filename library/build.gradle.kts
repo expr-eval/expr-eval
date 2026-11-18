@@ -21,7 +21,12 @@ kotlin {
     js(IR) {
         useEsModules()
         outputModuleName.set("expr-eval")
-        nodejs()
+        nodejs {
+            testTask {
+                environment("EXPR_BIND_FIXTURE", rootProject.file("parity/bind.tsv").absolutePath)
+                inputs.file(rootProject.file("parity/bind.tsv"))
+            }
+        }
         binaries.library()
     }
     sourceSets {
