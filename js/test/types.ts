@@ -13,7 +13,7 @@ const options: ParserOptions = { operators: { array: false } };
 const parser: Parser = new exprEval.Parser(options);
 const scope: ValueObject = { x: 3 };
 const parsed: Expression = parser.parse("x * 2");
-const instruction: Instruction = parsed.tokens[0];
+const instruction: Instruction | undefined = parsed.tokens[0];
 const value: Value = parsed.evaluate(scope);
 const callable = parsed.toJSFunction(["x"] as const);
 
@@ -26,6 +26,8 @@ callback(2);
 twice("2");
 const promise: Value = Promise.resolve(3);
 delete parser.functions.fac;
+// @ts-expect-error a registry lookup may be missing
+parsed.functions.missing(3);
 parser.consts.radius = 2;
 parser.consts = {};
 parser.unaryOps = { twice };
@@ -49,7 +51,13 @@ if (index) {
   void [char, item, guaranteed];
 }
 const joined: number[] | undefined = parsed.binaryOps["||"]?.([1], [2]);
-const choice = parsed.functions.if?.(true, 3, "fallback");
+const text: string | undefined = parsed.binaryOps["||"]?.("a", [1]);
+const choice: number | string | undefined = parsed.functions.if?.(
+  true,
+  3,
+  "fallback",
+);
+const assigned: number | undefined = parsed.binaryOps["="]?.("x", 2, position);
 parsed.functions.max?.([1, 2] as const);
 
 const zero: 0 = new Instruction("INUMBER", null).value;
@@ -58,13 +66,20 @@ const name: InstructionValue<"IVAR"> = "x";
 const token: Instruction<string> = new Instruction("IVAR", name);
 // @ts-expect-error a nested expression requires instructions
 new Instruction("IEXPR", 3);
+// @ts-expect-error specifying a payload type cannot bypass the opcode check
+new Instruction<number>("IEXPR", 3);
+class Token extends Instruction {}
+const nameToken = new Token("IVAR", "x");
 void [
   instruction,
   value,
   callable(4),
   promise,
   joined,
+  text,
   choice,
+  assigned,
+  nameToken,
   zero,
   omitted,
   token,

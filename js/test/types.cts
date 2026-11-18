@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- Exercise the CommonJS declaration entry.
 import pkg = require("@expr-eval/js");
 
 const options: pkg.ParserOptions = { operators: { array: false } };
