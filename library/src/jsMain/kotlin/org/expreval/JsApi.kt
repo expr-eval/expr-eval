@@ -32,6 +32,7 @@ private fun writeTokens(tokens: List<Instruction>): Array<JsInstruction> = token
 }.toTypedArray()
 
 private val engines: dynamic = js("new WeakMap()")
+private val expressionInstructions: dynamic = js("new WeakMap()")
 private object DefaultRegistries {
     private val defaults = Parser()
     val unary = toJs(defaults.unaryOps)
@@ -111,11 +112,25 @@ class JsParser(var options: dynamic = plainObject()) {
 @JsExport
 @JsName("Expression")
 class JsExpression(var tokens: dynamic, var parser: JsParser) {
+    init {
+        var editable = tokens
+        expressionInstructions.set(this, readTokens(editable))
+        val getTokens = { editable }
+        val setTokens = { replacement: dynamic ->
+            expressionInstructions.set(this, readTokens(replacement))
+            editable = replacement
+        }
+        js("Object.defineProperty(this, 'tokens', { get: getTokens, set: setTokens, enumerable: true, configurable: true })")
+    }
+
     val unaryOps: dynamic get() = parser.unaryOps
     val binaryOps: dynamic get() = parser.binaryOps
     val ternaryOps: dynamic get() = parser.ternaryOps
     val functions: dynamic get() = parser.functions
-    private fun core() = Expression(readTokens(tokens), parser.core())
+    private fun core(): Expression {
+        val prepared = expressionInstructions.get(this).unsafeCast<List<Instruction>>()
+        return Expression(prepared, parser.core())
+    }
     private fun wrap(expr: Expression) = JsExpression(writeTokens(expr.tokens), parser)
     fun simplify(values: dynamic = null): JsExpression = wrap(core().simplify(scopeMap(values)))
     fun substitute(variable: String, expr: dynamic): JsExpression =

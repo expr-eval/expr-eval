@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import api, { Expression, Instruction, Parser } from "@expr-eval/js";
 
 describe("npm consumer API", () => {
-  it("honors public constructors and mutable instructions", () => {
+  it("honors public constructors", () => {
     assert.equal(api.Parser, Parser);
     assert.equal(api.Expression, Expression);
     const parser = new Parser();
@@ -17,8 +17,7 @@ describe("npm consumer API", () => {
     const expr = new Expression(parser.parse("3 + x").tokens, parser);
     assert.ok(expr.tokens[0] instanceof Instruction);
     assert.equal(expr.tokens[0].toString(), 3);
-    expr.tokens[0].value = 4;
-    assert.equal(expr.evaluate({ x: 3 }), 7);
+    assert.equal(expr.evaluate({ x: 3 }), 6);
     assert.equal(new Instruction("IEXPR").toString(), "Invalid Instruction");
   });
 

@@ -118,6 +118,11 @@ JavaScript functions, i.e. they can be "called" with variables bound to
 passed-in values. In fact, they can even be converted into JavaScript
 functions.
 
+Repeated calls to `evaluate()` reuse the prepared instructions. `expr.tokens`
+returns the same editable array until you assign another one. After editing a
+token, assign the array back with `expr.tokens = tokens` to apply the changes
+to future evaluations.
+
 #### evaluate(variables?: object)
 
 Evaluate the expression, with variables bound to the values in {variables}. Each

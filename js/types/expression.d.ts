@@ -1,6 +1,7 @@
 import { Parser } from './parser.js';
 import { Instruction, Value, ValueObject } from './instruction.js';
 export declare class Expression {
+    /** The current editable instruction array. Assign it back to apply edits to the expression. */
     tokens: Instruction[];
     parser: Parser;
     get unaryOps(): {
