@@ -31,7 +31,6 @@ private fun writeTokens(tokens: List<Instruction>): Array<JsInstruction> = token
     JsInstruction(item.type.name, value)
 }.toTypedArray()
 
-private var functionCounter = 0
 private val engines: dynamic = js("new WeakMap()")
 private object DefaultRegistries {
     private val defaults = Parser()
@@ -76,19 +75,19 @@ private object DefaultRegistries {
 private fun functionMap(obj: dynamic) =
     ObjectMap(obj, { fromJs(it) as ExpressionFunction }, ::toJs)
 
+private fun copyRegistry(defaults: dynamic): dynamic = js("Object.assign({}, defaults)")
+
 @JsExport
 @JsName("Parser")
 class JsParser(var options: dynamic = plainObject()) {
-    var unaryOps: dynamic = DefaultRegistries.unary
-    var binaryOps: dynamic = DefaultRegistries.binary
-    var ternaryOps: dynamic = DefaultRegistries.ternary
-    var functions: dynamic = DefaultRegistries.functions
-    var consts: dynamic = DefaultRegistries.consts
+    var unaryOps: dynamic = copyRegistry(DefaultRegistries.unary)
+    var binaryOps: dynamic = copyRegistry(DefaultRegistries.binary)
+    var ternaryOps: dynamic = copyRegistry(DefaultRegistries.ternary)
+    var functions: dynamic = copyRegistry(DefaultRegistries.functions)
+    var consts: dynamic = copyRegistry(DefaultRegistries.consts)
 
     init {
-        val engine = Parser()
-        engine.onDefine = { function -> functions["lambda_${functionCounter++}"] = toJs(function) }
-        engines.set(this, engine)
+        engines.set(this, Parser())
     }
 
     internal fun core(): Parser {

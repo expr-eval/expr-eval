@@ -72,8 +72,6 @@ class Parser
     constructor(
         options: ParserOptions = ParserOptions(),
     ) {
-        internal var onDefine: ((ExpressionFunction) -> Unit)? = null
-
         var options: ParserOptions = options
             internal set
         var unaryOps: MutableMap<String, ExpressionFunction> = unaryBuiltins()

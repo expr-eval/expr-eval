@@ -63,7 +63,8 @@ Parser is the main class in the library. It has as single `parse` method, and
 
 #### Parser()
 
-Constructs a new `Parser` instance.
+Each new `Parser` owns its function, operator, and constant registries. To reuse
+custom registrations across expressions, parse them with the same instance.
 
 The constructor takes an optional `options` parameter that allows you to enable or disable operators.
 
@@ -100,7 +101,7 @@ Convert a mathematical expression into an `Expression` object.
 
 #### Parser.parse(expression: string)
 
-Static equivalent of `new Parser().parse(expression)`.
+Parses the expression with the default parser, which also serves `Parser.evaluate()`.
 
 #### Parser.evaluate(expression: string, variables?: object)
 
@@ -346,6 +347,18 @@ Examples:
     square(x) = x*x
     add(a, b) = a + b
     factorial(x) = x < 2 ? 1 : x * factorial(x - 1)
+```
+
+Definitions are stored in the scope passed to `evaluate`. To use one on a
+second parser, register the function on that parser explicitly.
+
+```js
+const first = new Parser();
+const second = new Parser();
+const scope = {};
+first.evaluate("square(x) = x*x", scope);
+second.functions.square = scope.square;
+second.evaluate("square(3)"); // 9
 ```
 
 #### Custom JavaScript functions

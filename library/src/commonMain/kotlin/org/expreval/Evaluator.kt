@@ -213,7 +213,6 @@ internal class Evaluator(
                                     run(body.items, Scope(local))
                                 },
                             )
-                        expression.parser.onDefine?.invoke(function)
                         scope[name] = function
                         function
                     }
