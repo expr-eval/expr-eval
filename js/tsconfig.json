@@ -6,5 +6,10 @@
     "noEmit": true,
     "types": []
   },
-  "include": ["types/**/*.d.ts", "test/types.ts"]
+  "include": [
+    "types/**/*.d.ts",
+    "types/**/*.d.cts",
+    "test/types.ts",
+    "test/types.cts"
+  ]
 }

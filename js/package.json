@@ -34,7 +34,7 @@
     "test": "vitest",
     "lint": "eslint .",
     "build": "node scripts/compile-kotlin.mjs && vite build",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.json --module node16",
     "pretest": "npm run build",
     "prepack": "npm run build"
   },
